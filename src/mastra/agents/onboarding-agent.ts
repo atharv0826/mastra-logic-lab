@@ -1,17 +1,18 @@
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
-import { 
-  createStackTool, 
-  createContentTypeTool, 
+import {
+  createStackTool,
+  createContentTypeTool,
   createGlobalFieldTool,
-  gatherRequirementsTool 
+  createEntryTool,
+  gatherRequirementsTool
 } from '../tools/contentstack-tools';
 import { scrapingTool } from '../tools/scrapping-tool';
 
 /**
  * Contentstack Onboarding Agent
- * 
+ *
  * This is the main conversational agent that guides users through the
  * Contentstack onboarding process. It gathers requirements, asks clarifying
  * questions, and orchestrates the creation of stacks and content models.
@@ -137,6 +138,7 @@ TOOLS AVAILABLE:
 - createStackTool: Create a new Contentstack stack
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
+- createEntryTool: Create entries (content instances) for any content type
 
 WEBSITE SCRAPING WORKFLOW:
 When user provides a URL:
@@ -156,17 +158,17 @@ Remember: You're here to make the onboarding process smooth and enjoyable. Take 
 be thorough, and ensure users understand what's happening at each step.
   `,
   model: 'openai/gpt-4o',
-  tools: { 
+  tools: {
     scrapingTool,
     gatherRequirementsTool,
-    createStackTool, 
-    createContentTypeTool, 
-    createGlobalFieldTool 
+    createStackTool,
+    createContentTypeTool,
+    createGlobalFieldTool,
+    createEntryTool
   },
   memory: new Memory({
     storage: new LibSQLStore({
-      url: 'file:../mastra.db',
-    }),
-  }),
+      url: 'file:../mastra.db'
+    })
+  })
 });
-
