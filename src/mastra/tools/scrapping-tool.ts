@@ -19,10 +19,10 @@ interface ScrapeResponse {
 
 export const scrapingTool = createTool({
   id: 'scrape-website',
-  description: 'Scrape a website and return its content in markdown format',
+  description: 'Scrape a website and return its content in markdown format. Analyzes website structure to understand page types, sections, and content patterns for Contentstack modeling.',
   inputSchema: z.object({
     url: z.string().describe('The URL of the website to scrape'),
-    apiKey: z.string().describe('DumplingAI API key for authentication'),
+    apiKey: z.string().optional().default(process.env.DUMPLING_API_KEY || '').describe('DumplingAI API key (from DUMPLING_API_KEY env var)'),
     format: z.enum(['markdown', 'html']).optional().default('markdown').describe('Output format'),
     cleaned: z.boolean().optional().default(true).describe('Whether to clean the content'),
     renderJs: z.boolean().optional().default(true).describe('Whether to render JavaScript'),
@@ -78,16 +78,22 @@ const scrapeWebsite = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to scrape website: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to scrape website: ${response.status} ${response.statusText}. Details: ${errorText}`);
   }
 
   const data = (await response.json()) as ScrapeResponse;
 
+  // Validate we have meaningful content
+  if (!data.content || data.content.trim().length === 0) {
+    throw new Error('Website scraping returned empty content. The website might be blocking scraping or requires authentication.');
+  }
+
   return {
-    title: data.title,
+    title: data.title || 'Untitled',
     content: data.content,
     url: data.url,
-    metadata: data.metadata,
+    metadata: data.metadata || {},
   };
 };
 

@@ -5,6 +5,7 @@ An intelligent, AI-powered onboarding system for Contentstack CMS that streamlin
 ## 🌟 Features
 
 - **Conversational AI Onboarding**: Natural language interaction to understand customer requirements
+- **Website Scraping & Analysis**: Automatically analyze existing websites to generate matching content models
 - **Intelligent Content Modeling**: AI-powered generation of production-ready content types and global fields
 - **Automated Stack Creation**: Programmatic setup of Contentstack environments
 - **Smart Decision Making**: Automatically determines when to use reusable components (global fields)
@@ -43,6 +44,9 @@ CONTENTSTACK_AUTH_TOKEN=your_contentstack_auth_token
 CONTENTSTACK_ORG_ID=your_organization_id
 CONTENTSTACK_API_KEY=your_api_key
 CONTENTSTACK_MANAGEMENT_TOKEN=your_management_token
+
+# DumplingAI (for website scraping)
+DUMPLING_API_KEY=your_dumplingai_api_key
 ```
 
 ### Running the System
@@ -62,8 +66,25 @@ npm run dev
 1. Start the dev server: `npm run dev`
 2. Open http://localhost:4111
 3. Select "Contentstack Onboarding Agent"
-4. Start chatting: "I want to create a website for my company"
+4. Start chatting with one of these approaches:
+   - **General request**: "I want to create a website for my company"
+   - **Website-based**: "Create a content model based on https://example.com"
+   - **Specific request**: "I need a blog with author profiles and SEO"
 5. Follow the agent's guidance through the onboarding process
+
+**Website Scraping Example:**
+```
+User: "Create a content model based on https://stripe.com"
+Agent: "Let me analyze that website..."
+       [Scrapes website and identifies structure]
+       "Based on Stripe's website, I can see it has:
+       - Homepage with hero sections
+       - Product landing pages
+       - Documentation structure
+       - Blog/news section
+       
+       I'll create appropriate content types for this structure."
+```
 
 ### Option 2: Example Scripts
 
