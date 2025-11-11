@@ -1,4 +1,3 @@
-
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
@@ -6,6 +5,7 @@ import { LibSQLStore } from '@mastra/libsql';
 // Weather demo (existing)
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { weatherAgent } from './agents/weather-agent';
+import { websiteBuilderAgent } from './agents/website-agents';
 import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer';
 
 // Contentstack onboarding system
@@ -14,34 +14,34 @@ import { onboardingAgent } from './agents/onboarding-agent';
 import { contentModelingAgent } from './agents/content-modeling-agent';
 
 export const mastra = new Mastra({
-  workflows: { 
+  workflows: {
     weatherWorkflow,
-    onboardingWorkflow,
+    onboardingWorkflow
   },
-  agents: { 
+  agents: {
     weatherAgent,
     onboardingAgent,
-    contentModelingAgent,
+    contentModelingAgent
   },
-  scorers: { 
-    toolCallAppropriatenessScorer, 
-    completenessScorer, 
-    translationScorer 
+  scorers: {
+    toolCallAppropriatenessScorer,
+    completenessScorer,
+    translationScorer
   },
   storage: new LibSQLStore({
     // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
-    url: ":memory:",
+    url: ':memory:'
   }),
   logger: new PinoLogger({
     name: 'Mastra',
-    level: 'info',
+    level: 'info'
   }),
   telemetry: {
     // Telemetry is deprecated and will be removed in the Nov 4th release
-    enabled: false, 
+    enabled: false
   },
   observability: {
     // Enables DefaultExporter and CloudExporter for AI tracing
-    default: { enabled: true }, 
-  },
+    default: { enabled: true }
+  }
 });
