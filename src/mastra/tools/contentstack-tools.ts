@@ -547,6 +547,224 @@ export const createEntryTool = createTool({
 });
 
 // ======================
+// GET ENTRY AND GENERATE UI TOOL
+// ======================
+
+export const getEntryAndGenerateUITool = createTool({
+  id: 'get-entry-and-generate-ui',
+  description: 'Fetches a Contentstack entry and analyzes its structure to provide UI generation recommendations. Returns entry data, field analysis, and suggestions for creating stunning UI components.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    content_type_uid: z.string().describe('UID of the content type'),
+    entry_uid: z.string().optional().describe('UID of specific entry to fetch (if not provided, fetches all entries)'),
+    locale: z.string().default('en-us').describe('Locale for the entry (default: en-us)')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    entry_data: z.any().optional().describe('The actual entry data from Contentstack'),
+    entries: z.array(z.any()).optional().describe('Multiple entries if no entry_uid provided'),
+    schema_analysis: z.object({
+      content_type: z.string(),
+      fields: z.array(z.object({
+        uid: z.string(),
+        data_type: z.string(),
+        display_name: z.string(),
+        mandatory: z.boolean(),
+        ui_component_suggestion: z.string()
+      }))
+    }).optional(),
+    ui_recommendations: z.object({
+      layout_type: z.string().describe('Suggested layout type: single-column, two-column, card-grid, etc.'),
+      hero_section: z.boolean().describe('Whether to create a hero section'),
+      sections: z.array(z.string()).describe('Suggested page sections'),
+      components: z.array(z.string()).describe('Recommended React components')
+    }).optional(),
+    error: z.string().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      let endpoint: string;
+      
+      if (context.entry_uid) {
+        // Fetch specific entry
+        endpoint = `https://api.contentstack.io/v3/content_types/${context.content_type_uid}/entries/${context.entry_uid}?locale=${context.locale}`;
+      } else {
+        // Fetch all entries
+        endpoint = `https://api.contentstack.io/v3/content_types/${context.content_type_uid}/entries?locale=${context.locale}`;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          api_key: context.api_key,
+          authtoken: context.authtoken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error_message || data.errors || 'Failed to fetch entry'
+        };
+      }
+
+      // Get content type schema for analysis
+      const schemaResponse = await fetch(
+        `https://api.contentstack.io/v3/content_types/${context.content_type_uid}`,
+        {
+          method: 'GET',
+          headers: {
+            api_key: context.api_key,
+            authtoken: context.authtoken,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const schemaData = await schemaResponse.json();
+
+      // Analyze schema and provide UI recommendations
+      const fields = schemaData.content_type?.schema || [];
+      const fieldAnalysis = fields.map((field: any) => ({
+        uid: field.uid,
+        data_type: field.data_type,
+        display_name: field.display_name,
+        mandatory: field.mandatory || false,
+        ui_component_suggestion: getUIComponentSuggestion(field)
+      }));
+
+      const uiRecommendations = generateUIRecommendations(fields, context.entry_uid ? data.entry : data.entries[0]);
+
+      return {
+        success: true,
+        entry_data: context.entry_uid ? data.entry : undefined,
+        entries: context.entry_uid ? undefined : data.entries,
+        schema_analysis: {
+          content_type: context.content_type_uid,
+          fields: fieldAnalysis
+        },
+        ui_recommendations: uiRecommendations
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// Helper function to suggest UI components based on field type
+function getUIComponentSuggestion(field: any): string {
+  const { data_type, uid, display_name } = field;
+  
+  switch (data_type) {
+    case 'text':
+      if (uid === 'title' || display_name.toLowerCase().includes('title')) {
+        return 'Hero Heading (h1) with large typography and styling';
+      }
+      if (display_name.toLowerCase().includes('subtitle') || display_name.toLowerCase().includes('tagline')) {
+        return 'Subheading (h2/p) with complementary styling';
+      }
+      if (field.field_metadata?.multiline) {
+        return 'Formatted text block with proper line spacing';
+      }
+      return 'Text content with appropriate typography';
+      
+    case 'number':
+      return 'Styled numeric display (card, badge, or metric)';
+      
+    case 'boolean':
+      return 'Toggle indicator or conditional content display';
+      
+    case 'isodate':
+      return 'Formatted date display (e.g., "Published on January 1, 2024")';
+      
+    case 'file':
+      if (display_name.toLowerCase().includes('image') || display_name.toLowerCase().includes('photo')) {
+        return 'Featured image with proper sizing and aspect ratio';
+      }
+      return 'File/asset display with download link';
+      
+    case 'link':
+      return 'Styled button or link with hover effects';
+      
+    case 'group':
+      return 'Card or section component for grouped content';
+      
+    case 'global_field':
+      return 'Nested component for global field content';
+      
+    case 'blocks':
+    case 'modular_blocks':
+      return 'Dynamic component renderer for modular content';
+      
+    case 'reference':
+      return 'Related content cards or list';
+      
+    case 'json':
+      return 'Structured data display (table, list, or custom component)';
+      
+    default:
+      if (field.multiple) {
+        return 'List or grid of items with cards';
+      }
+      return 'Styled content display';
+  }
+}
+
+// Helper function to generate overall UI recommendations
+function generateUIRecommendations(fields: any[], entryData: any): any {
+  const hasTitle = fields.some((f: any) => f.uid === 'title' || f.display_name.toLowerCase().includes('title'));
+  const hasImage = fields.some((f: any) => f.data_type === 'file' && (f.display_name.toLowerCase().includes('image') || f.display_name.toLowerCase().includes('photo')));
+  const hasContent = fields.some((f: any) => f.data_type === 'text' && f.field_metadata?.multiline);
+  const hasArrays = fields.some((f: any) => f.multiple);
+  
+  const sections: string[] = [];
+  const components: string[] = [];
+  
+  if (hasTitle) {
+    sections.push('Hero Section');
+    components.push('HeroSection');
+  }
+  
+  if (hasImage) {
+    sections.push('Featured Image Section');
+    components.push('FeaturedImage');
+  }
+  
+  if (hasContent) {
+    sections.push('Main Content Section');
+    components.push('ContentSection');
+  }
+  
+  if (hasArrays) {
+    sections.push('Card Grid Section');
+    components.push('CardGrid', 'Card');
+  }
+  
+  sections.push('Metadata Section', 'Footer');
+  components.push('MetadataDisplay', 'Footer');
+  
+  return {
+    layout_type: hasImage && hasTitle ? 'hero-with-image' : hasArrays ? 'card-grid' : 'single-column',
+    hero_section: hasTitle && hasImage,
+    sections,
+    components
+  };
+}
+
+// ======================
 // PREVIEW ENTRY TOOL
 // ======================
 
