@@ -489,10 +489,6 @@ export const createEntryTool = createTool({
       .string()
       .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
       .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
-    authorization: z
-      .string()
-      .default(process.env.CONTENTSTACK_MANAGEMENT_TOKEN || '')
-      .describe('Contentstack management/authorization token (from CONTENTSTACK_MANAGEMENT_TOKEN env var)'),
     content_type_uid: z.string().describe('UID of the content type for this entry'),
     locale: z.string().default('en-us').describe('Locale for the entry (default: en-us)'),
     entry_data: z.record(z.string(), z.any()).describe('Entry data as key-value pairs. Global fields should be nested objects with their field data.')
@@ -515,7 +511,6 @@ export const createEntryTool = createTool({
           headers: {
             api_key: context.api_key,
             authtoken: context.authtoken,
-            authorization: context.authorization,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

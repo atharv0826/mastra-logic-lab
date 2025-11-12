@@ -43,7 +43,6 @@ OPENAI_API_KEY=your_openai_api_key
 CONTENTSTACK_AUTH_TOKEN=your_contentstack_auth_token
 CONTENTSTACK_ORG_ID=your_organization_id
 CONTENTSTACK_API_KEY=your_api_key
-CONTENTSTACK_MANAGEMENT_TOKEN=your_management_token
 
 # DumplingAI (for website scraping)
 DUMPLING_API_KEY=your_dumplingai_api_key

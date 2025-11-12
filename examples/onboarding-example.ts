@@ -12,7 +12,6 @@ const CONTENTSTACK_CONFIG = {
   authtoken: process.env.CONTENTSTACK_AUTH_TOKEN || '',
   organization_uid: process.env.CONTENTSTACK_ORG_ID || '',
   api_key: process.env.CONTENTSTACK_API_KEY || '',
-  management_token: process.env.CONTENTSTACK_MANAGEMENT_TOKEN || '',
 };
 
 /**

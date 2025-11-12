@@ -7,7 +7,7 @@ async function createShoesHomePageEntry() {
       authtoken: process.env.CONTENTSTACK_AUTH_TOKEN || '',
       content_type_uid: 'shoes_home_page',
       locale: 'en-us',
-      entry: {
+      entry_data: {
         title: 'Nike Air Max Collection',
         url: '/nike-air-max-2024',
         hero_title: 'Step Into Comfort',
@@ -34,7 +34,8 @@ async function createShoesHomePageEntry() {
         ],
       },
     },
-  });
+    runtimeContext: {},
+  } as any);
 
   if (result.success) {
     console.log('Entry created successfully!');
@@ -54,7 +55,7 @@ async function createSimpleEntry() {
       authtoken: process.env.CONTENTSTACK_AUTH_TOKEN || '',
       content_type_uid: 'blog_post',
       locale: 'en-us',
-      entry: {
+      entry_data: {
         title: 'Getting Started with Contentstack',
         url: '/blog/getting-started-contentstack',
         body: 'Learn how to build amazing digital experiences with Contentstack',
@@ -62,7 +63,8 @@ async function createSimpleEntry() {
         publish_date: new Date().toISOString(),
       },
     },
-  });
+    runtimeContext: {},
+  } as any);
 
   if (result.success) {
     console.log('Blog entry created successfully!');
