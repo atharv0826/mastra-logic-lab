@@ -339,6 +339,70 @@ export const createEntryTool = createTool({
 });
 
 // ======================
+// CONTENT MODEL PREVIEW TOOL
+// ======================
+
+export const previewContentModelTool = createTool({
+  id: 'preview-contentstack-content-model',
+  description: 'Uses Contentstack AI to generate and preview content types and global fields based on requirements',
+  inputSchema: z.object({
+    instruction: z.string().describe('Structured instruction describing the content model requirements'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)')
+  }),
+  outputSchema: z.object({
+    type: z.literal('content-model-json'),
+    json: z.object({
+      global_fields: z.array(z.any()),
+      content_types: z.array(z.any())
+    })
+  }),
+  execute: async ({ context }) => {
+    try {
+      // Create form data with the instruction
+      const formData = new FormData();
+      formData.append('instruction', context.instruction);
+
+      const response = await fetch('https://ai.contentstack.com/ask-ai/content-model', {
+        method: 'POST',
+        headers: {
+          authtoken: context.authtoken,
+          accept: '*/*'
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        type: 'content-model-json' as const,
+        json: {
+          global_fields: data.global_fields || [],
+          content_types: data.content_types || []
+        }
+      };
+    } catch (error) {
+      // Return empty arrays on error so the structure is maintained
+      console.error('Error generating content model:', error);
+      return {
+        type: 'content-model-json' as const,
+        json: {
+          global_fields: [],
+          content_types: []
+        }
+      };
+    }
+  }
+});
+
+// ======================
 // CONVERSATION TOOL - For gathering requirements
 // ======================
 

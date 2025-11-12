@@ -1,0 +1,1141 @@
+curl 'https://ai.contentstack.com/ask-ai/content-model' \
+  -H 'accept: */*' \
+  -H 'accept-language: en-GB,en-US;q=0.9,en;q=0.8' \
+  -H 'authtoken: blt3b20cac7706572f8' \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundaryDVPhA3OgsRlXAfat' \
+  -H 'origin: https://app.contentstack.com' \
+  -H 'pragma: no-cache' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://app.contentstack.com/' \
+  -H 'sec-ch-ua: "Chromium";v="142", "Brave";v="142", "Not_A Brand";v="99"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-site' \
+  -H 'sec-gpc: 1' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36' \
+  --data-raw $'------WebKitFormBoundaryDVPhA3OgsRlXAfat\r\nContent-Disposition: form-data; name="instruction"\r\n\r\nGenerate a corporate homepage content type with:\r\n- Hero section\r\n- Company overview\r\n- Services showcase  \r\n- Value propositions\r\n- Client testimonials\r\n- Recent news/blogs\r\n------WebKitFormBoundaryDVPhA3OgsRlXAfat--\r\n'
+
+
+
+  Sample response:
+  {
+    "global_fields": [
+        {
+            "title": "SEO",
+            "uid": "seo",
+            "description": "Search Engine Optimization metadata",
+            "schema": [
+                {
+                    "display_name": "Meta Title",
+                    "uid": "meta_title",
+                    "data_type": "text",
+                    "field_metadata": {
+                        "description": "Title tag for SEO purposes"
+                    },
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Meta Description",
+                    "uid": "meta_description",
+                    "data_type": "text",
+                    "field_metadata": {
+                        "description": "Meta description for SEO purposes",
+                        "multiline": true
+                    },
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Meta Keywords",
+                    "uid": "meta_keywords",
+                    "data_type": "text",
+                    "field_metadata": {
+                        "description": "Keywords for SEO purposes"
+                    },
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "OG Image",
+                    "uid": "og_image",
+                    "data_type": "file",
+                    "field_metadata": {
+                        "description": "Open Graph image for social sharing"
+                    },
+                    "extensions": [],
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                }
+            ]
+        },
+        {
+            "title": "Header",
+            "uid": "header",
+            "description": "Global header section for the website",
+            "schema": [
+                {
+                    "display_name": "Logo",
+                    "uid": "logo",
+                    "data_type": "file",
+                    "field_metadata": {
+                        "description": "Company logo"
+                    },
+                    "extensions": [],
+                    "multiple": false,
+                    "mandatory": true,
+                    "unique": false
+                },
+                {
+                    "display_name": "Navigation Items",
+                    "uid": "navigation_items",
+                    "data_type": "group",
+                    "field_metadata": {
+                        "description": "Main navigation menu items"
+                    },
+                    "schema": [
+                        {
+                            "display_name": "Label",
+                            "uid": "label",
+                            "data_type": "text",
+                            "field_metadata": {
+                                "description": "Navigation item text"
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "Link",
+                            "uid": "link",
+                            "data_type": "link",
+                            "field_metadata": {
+                                "description": "Navigation item URL",
+                                "default_value": {
+                                    "title": "",
+                                    "url": ""
+                                }
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "Dropdown Items",
+                            "uid": "dropdown_items",
+                            "data_type": "group",
+                            "field_metadata": {
+                                "description": "Submenu items"
+                            },
+                            "schema": [
+                                {
+                                    "display_name": "Label",
+                                    "uid": "dropdown_label",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Dropdown item text"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Link",
+                                    "uid": "dropdown_link",
+                                    "data_type": "link",
+                                    "field_metadata": {
+                                        "description": "Dropdown item URL",
+                                        "default_value": {
+                                            "title": "",
+                                            "url": ""
+                                        }
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                }
+                            ],
+                            "multiple": true,
+                            "mandatory": false,
+                            "unique": false
+                        }
+                    ],
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "CTA Button",
+                    "uid": "cta_button",
+                    "data_type": "group",
+                    "field_metadata": {
+                        "description": "Call to action button"
+                    },
+                    "schema": [
+                        {
+                            "display_name": "Label",
+                            "uid": "cta_label",
+                            "data_type": "text",
+                            "field_metadata": {
+                                "description": "Button text"
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "Link",
+                            "uid": "cta_link",
+                            "data_type": "link",
+                            "field_metadata": {
+                                "description": "Button URL",
+                                "default_value": {
+                                    "title": "",
+                                    "url": ""
+                                }
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        }
+                    ],
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                }
+            ]
+        },
+        {
+            "title": "Footer",
+            "uid": "footer",
+            "description": "Global footer section for the website",
+            "schema": [
+                {
+                    "display_name": "Logo",
+                    "uid": "footer_logo",
+                    "data_type": "file",
+                    "field_metadata": {
+                        "description": "Company logo in footer"
+                    },
+                    "extensions": [],
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Company Description",
+                    "uid": "company_description",
+                    "data_type": "text",
+                    "field_metadata": {
+                        "description": "Short company description",
+                        "multiline": true
+                    },
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Footer Navigation Sections",
+                    "uid": "footer_navigation_sections",
+                    "data_type": "group",
+                    "field_metadata": {
+                        "description": "Footer menu sections"
+                    },
+                    "schema": [
+                        {
+                            "display_name": "Section Title",
+                            "uid": "section_title",
+                            "data_type": "text",
+                            "field_metadata": {
+                                "description": "Navigation section heading"
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "Links",
+                            "uid": "section_links",
+                            "data_type": "group",
+                            "field_metadata": {
+                                "description": "Links in this section"
+                            },
+                            "schema": [
+                                {
+                                    "display_name": "Label",
+                                    "uid": "link_label",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Link text"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "URL",
+                                    "uid": "link_url",
+                                    "data_type": "link",
+                                    "field_metadata": {
+                                        "description": "Link URL",
+                                        "default_value": {
+                                            "title": "",
+                                            "url": ""
+                                        }
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                }
+                            ],
+                            "multiple": true,
+                            "mandatory": false,
+                            "unique": false
+                        }
+                    ],
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Social Media Links",
+                    "uid": "social_media_links",
+                    "data_type": "group",
+                    "field_metadata": {
+                        "description": "Social media platform links"
+                    },
+                    "schema": [
+                        {
+                            "display_name": "Platform",
+                            "uid": "platform",
+                            "data_type": "text",
+                            "field_metadata": {
+                                "description": "Social media platform name"
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "URL",
+                            "uid": "social_url",
+                            "data_type": "link",
+                            "field_metadata": {
+                                "description": "Social media profile URL",
+                                "default_value": {
+                                    "title": "",
+                                    "url": ""
+                                }
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "Icon",
+                            "uid": "icon",
+                            "data_type": "file",
+                            "field_metadata": {
+                                "description": "Social media icon"
+                            },
+                            "extensions": [],
+                            "multiple": false,
+                            "mandatory": false,
+                            "unique": false
+                        }
+                    ],
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Copyright Text",
+                    "uid": "copyright_text",
+                    "data_type": "text",
+                    "field_metadata": {
+                        "description": "Copyright information"
+                    },
+                    "multiple": false,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "display_name": "Legal Links",
+                    "uid": "legal_links",
+                    "data_type": "group",
+                    "field_metadata": {
+                        "description": "Legal and policy links"
+                    },
+                    "schema": [
+                        {
+                            "display_name": "Label",
+                            "uid": "legal_label",
+                            "data_type": "text",
+                            "field_metadata": {
+                                "description": "Link text"
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        },
+                        {
+                            "display_name": "URL",
+                            "uid": "legal_url",
+                            "data_type": "link",
+                            "field_metadata": {
+                                "description": "Link URL",
+                                "default_value": {
+                                    "title": "",
+                                    "url": ""
+                                }
+                            },
+                            "multiple": false,
+                            "mandatory": true,
+                            "unique": false
+                        }
+                    ],
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                }
+            ]
+        }
+    ],
+    "content_types": [
+        {
+            "title": "Corporate Homepage",
+            "uid": "corporate_homepage",
+            "description": "Main homepage for corporate website with various sections",
+            "schema": [
+                {
+                    "display_name": "Title",
+                    "uid": "title",
+                    "data_type": "text",
+                    "mandatory": true,
+                    "unique": true,
+                    "field_metadata": {
+                        "_default": true
+                    },
+                    "multiple": false
+                },
+                {
+                    "display_name": "URL",
+                    "uid": "url",
+                    "data_type": "text",
+                    "mandatory": true,
+                    "field_metadata": {
+                        "_default": true
+                    },
+                    "multiple": false,
+                    "unique": false
+                },
+                {
+                    "data_type": "global_field",
+                    "display_name": "Header",
+                    "reference_to": "header",
+                    "uid": "header_reference",
+                    "mandatory": false,
+                    "multiple": false,
+                    "unique": false
+                },
+                {
+                    "data_type": "blocks",
+                    "display_name": "Page Sections",
+                    "uid": "page_sections",
+                    "field_metadata": {
+                        "description": "Modular sections for the homepage"
+                    },
+                    "blocks": [
+                        {
+                            "title": "Hero Section",
+                            "uid": "hero_section",
+                            "schema": [
+                                {
+                                    "display_name": "Heading",
+                                    "uid": "hero_heading",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Main headline for the hero section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Subheading",
+                                    "uid": "hero_subheading",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Supporting text below the headline",
+                                        "multiline": true
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Background Image",
+                                    "uid": "hero_background",
+                                    "data_type": "file",
+                                    "field_metadata": {
+                                        "description": "Hero section background image"
+                                    },
+                                    "extensions": [],
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "CTA Buttons",
+                                    "uid": "hero_cta_buttons",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Call to action buttons"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Button Text",
+                                            "uid": "button_text",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Text displayed on the button"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Button Link",
+                                            "uid": "button_link",
+                                            "data_type": "link",
+                                            "field_metadata": {
+                                                "description": "URL for the button",
+                                                "default_value": {
+                                                    "title": "",
+                                                    "url": ""
+                                                }
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Button Style",
+                                            "uid": "button_style",
+                                            "data_type": "text",
+                                            "display_type": "dropdown",
+                                            "enum": {
+                                                "advanced": false,
+                                                "choices": [
+                                                    {
+                                                        "value": "primary"
+                                                    },
+                                                    {
+                                                        "value": "secondary"
+                                                    },
+                                                    {
+                                                        "value": "outline"
+                                                    }
+                                                ]
+                                            },
+                                            "field_metadata": {
+                                                "description": "Visual style of the button"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Company Overview",
+                            "uid": "company_overview",
+                            "schema": [
+                                {
+                                    "display_name": "Section Title",
+                                    "uid": "overview_title",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Title for the company overview section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Description",
+                                    "uid": "overview_description",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Company description text",
+                                        "multiline": true,
+                                        "allow_rich_text": true,
+                                        "rich_text_type": "advanced"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Company Image",
+                                    "uid": "company_image",
+                                    "data_type": "file",
+                                    "field_metadata": {
+                                        "description": "Image representing the company"
+                                    },
+                                    "extensions": [],
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Key Stats",
+                                    "uid": "key_stats",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Important company statistics"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Stat Value",
+                                            "uid": "stat_value",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Numerical value or text for the statistic"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Stat Label",
+                                            "uid": "stat_label",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Description of what the statistic represents"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "CTA Button",
+                                    "uid": "overview_cta",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Call to action button"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Button Text",
+                                            "uid": "overview_button_text",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Text displayed on the button"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Button Link",
+                                            "uid": "overview_button_link",
+                                            "data_type": "link",
+                                            "field_metadata": {
+                                                "description": "URL for the button",
+                                                "default_value": {
+                                                    "title": "",
+                                                    "url": ""
+                                                }
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Services Showcase",
+                            "uid": "services_showcase",
+                            "schema": [
+                                {
+                                    "display_name": "Section Title",
+                                    "uid": "services_title",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Title for the services section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Section Description",
+                                    "uid": "services_description",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Description text for the services section",
+                                        "multiline": true
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Services",
+                                    "uid": "services",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Individual service offerings"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Service Name",
+                                            "uid": "service_name",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Name of the service"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Service Description",
+                                            "uid": "service_description",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Description of the service",
+                                                "multiline": true
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Service Icon",
+                                            "uid": "service_icon",
+                                            "data_type": "file",
+                                            "field_metadata": {
+                                                "description": "Icon representing the service"
+                                            },
+                                            "extensions": [],
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Service Link",
+                                            "uid": "service_link",
+                                            "data_type": "link",
+                                            "field_metadata": {
+                                                "description": "Link to service details page",
+                                                "default_value": {
+                                                    "title": "",
+                                                    "url": ""
+                                                }
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "View All Services Link",
+                                    "uid": "view_all_services",
+                                    "data_type": "link",
+                                    "field_metadata": {
+                                        "description": "Link to services overview page",
+                                        "default_value": {
+                                            "title": "",
+                                            "url": ""
+                                        }
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Value Propositions",
+                            "uid": "value_propositions",
+                            "schema": [
+                                {
+                                    "display_name": "Section Title",
+                                    "uid": "value_title",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Title for the value propositions section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Section Description",
+                                    "uid": "value_description",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Description text for the value propositions section",
+                                        "multiline": true
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Value Points",
+                                    "uid": "value_points",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Individual value proposition points"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Title",
+                                            "uid": "point_title",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Title of the value point"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Description",
+                                            "uid": "point_description",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Description of the value point",
+                                                "multiline": true
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Icon",
+                                            "uid": "point_icon",
+                                            "data_type": "file",
+                                            "field_metadata": {
+                                                "description": "Icon representing the value point"
+                                            },
+                                            "extensions": [],
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Background Image",
+                                    "uid": "value_background",
+                                    "data_type": "file",
+                                    "field_metadata": {
+                                        "description": "Background image for the section"
+                                    },
+                                    "extensions": [],
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Client Testimonials",
+                            "uid": "client_testimonials",
+                            "schema": [
+                                {
+                                    "display_name": "Section Title",
+                                    "uid": "testimonials_title",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Title for the testimonials section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Section Description",
+                                    "uid": "testimonials_description",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Description text for the testimonials section",
+                                        "multiline": true
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Testimonials",
+                                    "uid": "testimonials",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Individual client testimonials"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Client Name",
+                                            "uid": "client_name",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Name of the client"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Client Position",
+                                            "uid": "client_position",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Job title of the client"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Client Company",
+                                            "uid": "client_company",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Company name of the client"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Testimonial Text",
+                                            "uid": "testimonial_text",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "The testimonial quote",
+                                                "multiline": true
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Client Image",
+                                            "uid": "client_image",
+                                            "data_type": "file",
+                                            "field_metadata": {
+                                                "description": "Photo of the client"
+                                            },
+                                            "extensions": [],
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Company Logo",
+                                            "uid": "company_logo",
+                                            "data_type": "file",
+                                            "field_metadata": {
+                                                "description": "Logo of the client's company"
+                                            },
+                                            "extensions": [],
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        },
+                        {
+                            "title": "Recent News",
+                            "uid": "recent_news",
+                            "schema": [
+                                {
+                                    "display_name": "Section Title",
+                                    "uid": "news_title",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Title for the news section"
+                                    },
+                                    "multiple": false,
+                                    "mandatory": true,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "Section Description",
+                                    "uid": "news_description",
+                                    "data_type": "text",
+                                    "field_metadata": {
+                                        "description": "Description text for the news section",
+                                        "multiline": true
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "News Items",
+                                    "uid": "news_items",
+                                    "data_type": "group",
+                                    "field_metadata": {
+                                        "description": "Recent news or blog articles"
+                                    },
+                                    "schema": [
+                                        {
+                                            "display_name": "Article Title",
+                                            "uid": "article_title",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Title of the news article"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Article Summary",
+                                            "uid": "article_summary",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Brief summary of the article",
+                                                "multiline": true
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Publication Date",
+                                            "uid": "publication_date",
+                                            "data_type": "isodate",
+                                            "field_metadata": {
+                                                "description": "Date when the article was published"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Featured Image",
+                                            "uid": "featured_image",
+                                            "data_type": "file",
+                                            "field_metadata": {
+                                                "description": "Main image for the article"
+                                            },
+                                            "extensions": [],
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Article Link",
+                                            "uid": "article_link",
+                                            "data_type": "link",
+                                            "field_metadata": {
+                                                "description": "Link to the full article",
+                                                "default_value": {
+                                                    "title": "",
+                                                    "url": ""
+                                                }
+                                            },
+                                            "multiple": false,
+                                            "mandatory": true,
+                                            "unique": false
+                                        },
+                                        {
+                                            "display_name": "Category",
+                                            "uid": "article_category",
+                                            "data_type": "text",
+                                            "field_metadata": {
+                                                "description": "Category of the article"
+                                            },
+                                            "multiple": false,
+                                            "mandatory": false,
+                                            "unique": false
+                                        }
+                                    ],
+                                    "multiple": true,
+                                    "mandatory": false,
+                                    "unique": false
+                                },
+                                {
+                                    "display_name": "View All News Link",
+                                    "uid": "view_all_news",
+                                    "data_type": "link",
+                                    "field_metadata": {
+                                        "description": "Link to news/blog overview page",
+                                        "default_value": {
+                                            "title": "",
+                                            "url": ""
+                                        }
+                                    },
+                                    "multiple": false,
+                                    "mandatory": false,
+                                    "unique": false
+                                }
+                            ]
+                        }
+                    ],
+                    "multiple": true,
+                    "mandatory": false,
+                    "unique": false
+                },
+                {
+                    "data_type": "global_field",
+                    "display_name": "Footer",
+                    "reference_to": "footer",
+                    "uid": "footer_reference",
+                    "mandatory": false,
+                    "multiple": false,
+                    "unique": false
+                },
+                {
+                    "data_type": "global_field",
+                    "display_name": "SEO",
+                    "reference_to": "seo",
+                    "uid": "seo_reference",
+                    "mandatory": false,
+                    "multiple": false,
+                    "unique": false
+                }
+            ]
+        }
+    ]
+}
