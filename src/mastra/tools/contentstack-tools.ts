@@ -2,6 +2,62 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
 // ======================
+// STACK PREVIEW TOOL
+// ======================
+
+export const previewStackTool = createTool({
+  id: 'preview-contentstack-stack',
+  description: 'Shows a preview of the JSON payload that will be sent to Contentstack API for stack creation',
+  inputSchema: z.object({
+    name: z.string().describe('Name of the stack'),
+    description: z.string().describe('Description of the stack'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    organization_uid: z
+      .string()
+      .default(process.env.CONTENTSTACK_ORG_ID || '')
+      .describe('Organization UID (from CONTENTSTACK_ORG_ID env var)'),
+    master_locale: z.string().default('en-us').describe('Master locale (default: en-us)')
+  }),
+  outputSchema: z.object({
+    type: z.literal('stack-json'),
+    json: z.object({
+      stack: z.object({
+        name: z.string(),
+        description: z.string(),
+        master_locale: z.string()
+      })
+    }),
+    headers: z.object({
+      authtoken: z.string(),
+      organization_uid: z.string(),
+      'Content-Type': z.string()
+    }),
+    endpoint: z.string()
+  }),
+  execute: async ({ context }) => {
+    return {
+      type: 'stack-json' as const,
+      json: {
+        stack: {
+          name: context.name,
+          description: context.description,
+          master_locale: context.master_locale
+        }
+      },
+      headers: {
+        authtoken: context.authtoken,
+        organization_uid: context.organization_uid,
+        'Content-Type': 'application/json'
+      },
+      endpoint: 'https://api.contentstack.io/v3/stacks'
+    };
+  }
+});
+
+// ======================
 // STACK CREATION TOOL
 // ======================
 

@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import {
+  previewStackTool,
   createStackTool,
   createContentTypeTool,
   createGlobalFieldTool,
@@ -43,7 +44,10 @@ YOUR RESPONSIBILITIES:
 3. GUIDE THROUGH STACK CREATION
    - Explain what a stack is (a workspace for their content)
    - Get confirmation on stack name and description
-   - Use the createStackTool to create the stack
+   - BEFORE creating, use previewStackTool to show the JSON payload that will be sent
+   - The preview will return a structured object with type: "stack-json" and the actual JSON
+   - DO NOT include the JSON in your textual response - it will be displayed separately
+   - After user confirms the preview, use createStackTool to create the stack
    - Save the returned api_key for subsequent operations
 
 4. PLAN CONTENT MODELS
@@ -135,6 +139,7 @@ Now I'll create the content models. This will take just a moment..."
 TOOLS AVAILABLE:
 - scrapingTool: Scrape and analyze a website to understand its structure (requires url and apiKey from DUMPLING_API_KEY)
 - gatherRequirementsTool: Structure user requirements
+- previewStackTool: Preview the JSON payload before creating a stack (returns type: "stack-json" with the actual JSON)
 - createStackTool: Create a new Contentstack stack
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
@@ -161,6 +166,7 @@ be thorough, and ensure users understand what's happening at each step.
   tools: {
     scrapingTool,
     gatherRequirementsTool,
+    previewStackTool,
     createStackTool,
     createContentTypeTool,
     createGlobalFieldTool,
