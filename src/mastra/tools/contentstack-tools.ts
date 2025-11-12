@@ -283,6 +283,94 @@ export const createEntryTool = createTool({
 });
 
 // ======================
+// JSON PREVIEW TOOLS - Return structured JSON for frontend display
+// ======================
+
+export const previewStackTool = createTool({
+  id: 'preview-stack-json',
+  description: 'Generates a preview of the stack JSON that will be sent to Contentstack API. Returns actual JSON object for frontend display.',
+  inputSchema: z.object({
+    name: z.string().describe('Name of the stack'),
+    description: z.string().describe('Description of the stack'),
+    master_locale: z.string().default('en-us').describe('Master locale (default: en-us)')
+  }),
+  outputSchema: z.object({
+    preview: z.object({
+      stack: z.object({
+        name: z.string(),
+        description: z.string(),
+        master_locale: z.string()
+      })
+    }),
+    message: z.string()
+  }),
+  execute: async ({ context }) => {
+    return {
+      preview: {
+        stack: {
+          name: context.name,
+          description: context.description,
+          master_locale: context.master_locale
+        }
+      },
+      message: 'Stack JSON preview generated. Please review and confirm to proceed with creation.'
+    };
+  }
+});
+
+export const previewGlobalFieldsTool = createTool({
+  id: 'preview-global-fields-json',
+  description: 'Generates preview of global fields JSON that will be created. Returns array of global field objects for frontend display.',
+  inputSchema: z.object({
+    global_fields: z.array(z.any()).describe('Array of global field objects from generateContentModelTool')
+  }),
+  outputSchema: z.object({
+    previews: z.array(z.object({
+      global_field: z.any()
+    })),
+    count: z.number(),
+    message: z.string()
+  }),
+  execute: async ({ context }) => {
+    const previews = context.global_fields.map((field: any) => ({
+      global_field: field
+    }));
+
+    return {
+      previews,
+      count: previews.length,
+      message: `${previews.length} global field(s) ready for creation. Please review and confirm.`
+    };
+  }
+});
+
+export const previewContentTypesTool = createTool({
+  id: 'preview-content-types-json',
+  description: 'Generates preview of content types JSON that will be created. Returns array of content type objects for frontend display.',
+  inputSchema: z.object({
+    content_types: z.array(z.any()).describe('Array of content type objects from generateContentModelTool')
+  }),
+  outputSchema: z.object({
+    previews: z.array(z.object({
+      content_type: z.any()
+    })),
+    count: z.number(),
+    message: z.string()
+  }),
+  execute: async ({ context }) => {
+    const previews = context.content_types.map((type: any) => ({
+      content_type: type
+    }));
+
+    return {
+      previews,
+      count: previews.length,
+      message: `${previews.length} content type(s) ready for creation. Please review and confirm.`
+    };
+  }
+});
+
+// ======================
 // CONTENT MODEL GENERATION TOOL - Using Contentstack AI API
 // ======================
 
