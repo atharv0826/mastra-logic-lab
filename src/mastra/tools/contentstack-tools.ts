@@ -283,6 +283,88 @@ export const createEntryTool = createTool({
 });
 
 // ======================
+// CONTENT MODEL GENERATION TOOL - Using Contentstack AI API
+// ======================
+
+export const generateContentModelTool = createTool({
+  id: 'generate-contentstack-content-model',
+  description: 'Generates content types and global fields using Contentstack AI API based on a structured prompt',
+  inputSchema: z.object({
+    instruction: z.string().describe('Well-structured prompt describing what content model to generate'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    global_fields: z.array(z.any()).optional().describe('Generated global fields (may be empty)'),
+    content_types: z.array(z.any()).describe('Generated content types'),
+    error: z.string().optional(),
+    raw_response: z.string().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      // Create multipart form data
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+      const formData = `--${boundary}\r\nContent-Disposition: form-data; name="instruction"\r\n\r\n${context.instruction}\r\n--${boundary}--\r\n`;
+
+      const response = await fetch('https://ai.contentstack.com/ask-ai/content-model', {
+        method: 'POST',
+        headers: {
+          accept: '*/*',
+          authtoken: context.authtoken,
+          'content-type': `multipart/form-data; boundary=${boundary}`,
+          origin: 'https://app.contentstack.com',
+          referer: 'https://app.contentstack.com/'
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          success: false,
+          global_fields: [],
+          content_types: [],
+          error: `API request failed: ${response.status} ${response.statusText}. ${errorText}`
+        };
+      }
+
+      // Read the stream response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          fullResponse += decoder.decode(value, { stream: true });
+        }
+      }
+
+      // Parse the JSON response
+      const data = JSON.parse(fullResponse);
+
+      return {
+        success: true,
+        global_fields: data.global_fields || [],
+        content_types: data.content_types || [],
+        raw_response: fullResponse
+      };
+    } catch (error) {
+      return {
+        success: false,
+        global_fields: [],
+        content_types: [],
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// ======================
 // CONVERSATION TOOL - For gathering requirements
 // ======================
 

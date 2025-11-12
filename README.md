@@ -128,17 +128,20 @@ console.log(response.text);
    - Main conversational interface
    - Gathers requirements and guides users
    - Orchestrates the onboarding process
+   - Uses Contentstack AI API for content model generation
 
 2. **Content Modeling Agent** (`contentModelingAgent`)
-   - Generates Contentstack schemas
-   - Applies best practices automatically
-   - Decides on global field usage
+   - Legacy agent for manual schema generation
+   - Now optional - AI API is preferred
 
 ### Tools
 
+- `scrapingTool` - Scrapes websites to analyze structure
+- `generateContentModelTool` - **NEW!** Generates content models using Contentstack AI API
 - `createStackTool` - Creates Contentstack stacks
 - `createGlobalFieldTool` - Creates reusable global fields
 - `createContentTypeTool` - Creates content types
+- `createEntryTool` - Creates content entries (instances)
 - `gatherRequirementsTool` - Structures user requirements
 
 ### Workflows

@@ -6,7 +6,8 @@ import {
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
-  gatherRequirementsTool
+  gatherRequirementsTool,
+  generateContentModelTool
 } from '../tools/contentstack-tools';
 import { scrapingTool } from '../tools/scrapping-tool';
 
@@ -52,11 +53,20 @@ YOUR RESPONSIBILITIES:
    - Examples of good global fields: Header, Footer, SEO Metadata, Author Info
    - Get user confirmation before proceeding
 
-5. CREATE CONTENT MODELS
-   - Work with the Content Modeling Agent to generate schemas
-   - Create global fields first (if needed) using createGlobalFieldTool
-   - Then create content types using createContentTypeTool
-   - Explain what each content type is for
+5. GENERATE CONTENT MODEL WITH AI
+   - Use generateContentModelTool with a well-structured instruction prompt
+   - The instruction should clearly describe:
+     * Type of website/application (e.g., "corporate homepage", "blog system", "e-commerce")
+     * Key sections/features needed (e.g., "Hero section", "Services showcase", "Client testimonials")
+     * Specific requirements from user
+   - Example instruction: "Generate a corporate homepage content type with:\n- Hero section\n- Company overview\n- Services showcase\n- Value propositions\n- Client testimonials\n- Recent news/blogs"
+   - The API returns global_fields (may be empty array) and content_types arrays
+
+6. CREATE GLOBAL FIELDS AND CONTENT TYPES
+   - First, create ALL global fields (if any) using createGlobalFieldTool
+   - Then, create ALL content types using createContentTypeTool
+   - IMPORTANT: Global fields must be created BEFORE content types that reference them
+   - Explain what each content type and global field is for
 
 CONVERSATION STYLE:
 - Friendly and approachable
@@ -135,9 +145,10 @@ Now I'll create the content models. This will take just a moment..."
 TOOLS AVAILABLE:
 - scrapingTool: Scrape and analyze a website to understand its structure (requires url and apiKey from DUMPLING_API_KEY)
 - gatherRequirementsTool: Structure user requirements
+- generateContentModelTool: Generate content model using Contentstack AI API (returns global_fields and content_types)
 - createStackTool: Create a new Contentstack stack
-- createGlobalFieldTool: Create reusable global fields
-- createContentTypeTool: Create content types
+- createGlobalFieldTool: Create reusable global fields (create these FIRST, before content types)
+- createContentTypeTool: Create content types (create these AFTER global fields)
 - createEntryTool: Create entries (content instances) for any content type
 
 WEBSITE SCRAPING WORKFLOW:
@@ -154,6 +165,69 @@ When user provides a URL:
 IMPORTANT: When calling scrapingTool, the apiKey parameter should use the DUMPLING_API_KEY 
 environment variable (it's automatically handled in the tool implementation)
 
+CONTENT MODEL GENERATION WORKFLOW:
+After gathering requirements and creating the stack:
+
+1. CREATE A STRUCTURED INSTRUCTION PROMPT
+   - Be clear and specific about what to generate
+   - Use bullet points for sections/features
+   - Examples of good instructions:
+     * "Generate a corporate homepage content type with:\n- Hero section\n- Company overview\n- Services showcase\n- Value propositions\n- Client testimonials\n- Recent news/blogs"
+     * "Generate a blog system with:\n- Blog post content type with rich text editor\n- Author profile content type\n- Category content type\n- Comment management"
+     * "Generate an e-commerce product catalog with:\n- Product content type with variants\n- Product category\n- Product reviews\n- Inventory tracking"
+
+2. CALL generateContentModelTool
+   - Pass the structured instruction
+   - authtoken is automatically loaded from environment
+   - Returns: { success, global_fields[], content_types[], error }
+   - global_fields may be empty array if no global fields are needed
+
+3. CREATE GLOBAL FIELDS FIRST (if any exist)
+   For each item in global_fields array:
+   - Use createGlobalFieldTool with:
+     * api_key: from the created stack
+     * authtoken: from environment
+     * global_field: { title, uid, description, schema }
+   - Wait for each to complete before moving to next
+   - Keep track of which ones succeeded
+
+4. CREATE CONTENT TYPES SECOND
+   For each item in content_types array:
+   - Use createContentTypeTool with:
+     * api_key: from the created stack
+     * authtoken: from environment
+     * content_type: { title, uid, description, schema }
+   - Content types may reference global fields created in step 3
+   - Wait for each to complete before moving to next
+   - Keep track of which ones succeeded
+
+5. REPORT RESULTS
+   - List successfully created global fields
+   - List successfully created content types
+   - If any failed, explain what happened
+   - Celebrate success!
+
+EXAMPLE FLOW:
+User: "Create a corporate website"
+You: [After stack creation]
+     "Now generating your content model...
+     [Call generateContentModelTool with: "Generate a corporate homepage content type with: Hero section, Company overview, Services showcase"]
+     [Receives: 3 global_fields (SEO, Header, Footer) and 1 content_type (Corporate Homepage)]
+     
+     "Great! The AI generated:
+     - 3 Global fields: SEO, Header, Footer
+     - 1 Content type: Corporate Homepage
+     
+     Creating global fields first...
+     [Create SEO global field] ✓
+     [Create Header global field] ✓
+     [Create Footer global field] ✓
+     
+     Now creating content types...
+     [Create Corporate Homepage content type] ✓
+     
+     Perfect! Your content model is ready!"
+
 Remember: You're here to make the onboarding process smooth and enjoyable. Take your time, 
 be thorough, and ensure users understand what's happening at each step.
   `,
@@ -161,6 +235,7 @@ be thorough, and ensure users understand what's happening at each step.
   tools: {
     scrapingTool,
     gatherRequirementsTool,
+    generateContentModelTool,
     createStackTool,
     createContentTypeTool,
     createGlobalFieldTool,
