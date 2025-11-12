@@ -7,6 +7,8 @@ import {
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
+  previewEntryTool,
+  getContentTypeSchema,
   gatherRequirementsTool,
   previewContentModelTool
 } from '../tools/contentstack-tools';
@@ -161,6 +163,51 @@ Now let me generate the content models for your website..."
 [After user confirms]
 "Great! I'll now create these in your stack..."
 
+6. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
+   After content models are successfully created, you can offer to create sample entries:
+   - Ask user if they want to create entries for any of the content types
+   - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
+   - The schema will show required_fields, optional_fields, and global_fields
+   - For global fields, explain that they need nested data (e.g., SEO field needs meta_title, meta_description, etc.)
+   - Use previewEntryTool to show what will be created (MANDATORY before createEntryTool)
+   - Wait for user confirmation of the preview
+   - ONLY after confirmation, use createEntryTool to create the entry
+   - Handle global fields intelligently as nested objects
+
+ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
+1. User asks to create an entry (e.g., "Create a blog post entry")
+2. ALWAYS call getContentTypeSchema first to understand the structure
+3. Analyze the schema response:
+   - Identify required_fields (must be provided)
+   - Identify optional_fields (can be omitted)
+   - Identify global_fields (need nested object data)
+4. Ask user for the field values, explaining:
+   - Which fields are required
+   - For global fields, explain what nested data is needed
+   - Example: "The 'seo' field is a global field that needs: meta_title, meta_description, and meta_keywords"
+5. Once you have the data, call previewEntryTool (MANDATORY)
+6. Explain what will be created
+7. WAIT for user confirmation
+8. ONLY after confirmation, call createEntryTool
+9. Report success with entry UID and other details
+
+EXAMPLE ENTRY DATA WITH GLOBAL FIELD:
+{
+  "title": "My First Blog Post",
+  "url": "/blog/my-first-post",
+  "author": "John Doe",
+  "publication_date": "2025-11-12",
+  "content": "This is the main content...",
+  "article_tags": ["technology", "AI"],
+  "article_seo": {
+    "meta_title": "My First Blog Post - Company Blog",
+    "meta_description": "An introduction to our new blog",
+    "meta_keywords": ["blog", "introduction", "company"]
+  }
+}
+
+Note how "article_seo" (a global field) contains nested object data.
+
 TOOLS AVAILABLE:
 - scrapingTool: Scrape and analyze a website to understand its structure (requires url and apiKey from DUMPLING_API_KEY)
 - gatherRequirementsTool: Structure user requirements
@@ -169,6 +216,8 @@ TOOLS AVAILABLE:
 - previewContentModelTool: Generate and preview content models using Contentstack AI (returns type: "content-model-json" with global_fields and content_types)
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
+- getContentTypeSchema: Fetch content type schema to understand structure before creating entries
+- previewEntryTool: Preview entry data before creation (returns type: "entry-json")
 - createEntryTool: Create entries (content instances) for any content type
 
 CONTENT MODEL GENERATION WORKFLOW (MANDATORY SEQUENCE):
@@ -211,6 +260,8 @@ be thorough, and ensure users understand what's happening at each step.
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,
+    getContentTypeSchema,
+    previewEntryTool,
     createEntryTool
   },
   memory: new Memory({

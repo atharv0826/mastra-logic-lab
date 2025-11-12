@@ -360,3 +360,227 @@ export const gatherRequirementsTool = createTool({
     };
   }
 });
+
+// ======================
+// GET CONTENT TYPE SCHEMA TOOL
+// ======================
+
+export const getContentTypeSchema = createTool({
+  id: 'get-content-type-schema',
+  description: 'Fetches the schema of a content type to understand its structure, including global fields. Use this before creating entries to know what fields are required.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    content_type_uid: z.string().describe('UID of the content type to fetch')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    content_type: z.object({
+      title: z.string(),
+      uid: z.string(),
+      description: z.string().optional(),
+      schema: z.array(z.any())
+    }).optional(),
+    field_summary: z.object({
+      required_fields: z.array(z.string()),
+      optional_fields: z.array(z.string()),
+      global_fields: z.array(z.object({
+        uid: z.string(),
+        reference_to: z.string(),
+        display_name: z.string(),
+        mandatory: z.boolean()
+      }))
+    }).optional(),
+    error: z.string().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch(
+        `https://api.contentstack.io/v3/content_types/${context.content_type_uid}`,
+        {
+          method: 'GET',
+          headers: {
+            api_key: context.api_key,
+            authtoken: context.authtoken,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error_message || data.errors || 'Failed to fetch content type schema'
+        };
+      }
+
+      const schema = data.content_type.schema;
+      const required_fields: string[] = [];
+      const optional_fields: string[] = [];
+      const global_fields: any[] = [];
+
+      // Analyze schema to categorize fields
+      schema.forEach((field: any) => {
+        if (field.data_type === 'global_field') {
+          global_fields.push({
+            uid: field.uid,
+            reference_to: field.reference_to,
+            display_name: field.display_name,
+            mandatory: field.mandatory || false
+          });
+          if (field.mandatory) {
+            required_fields.push(field.uid);
+          } else {
+            optional_fields.push(field.uid);
+          }
+        } else {
+          if (field.mandatory) {
+            required_fields.push(field.uid);
+          } else {
+            optional_fields.push(field.uid);
+          }
+        }
+      });
+
+      return {
+        success: true,
+        content_type: {
+          title: data.content_type.title,
+          uid: data.content_type.uid,
+          description: data.content_type.description,
+          schema: schema
+        },
+        field_summary: {
+          required_fields,
+          optional_fields,
+          global_fields
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// ======================
+// CREATE ENTRY TOOL
+// ======================
+
+export const createEntryTool = createTool({
+  id: 'create-contentstack-entry',
+  description: 'Creates an entry (content instance) for a specific content type. Intelligently handles global fields as nested objects. The entry_data should match the content type schema.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    authorization: z
+      .string()
+      .default(process.env.CONTENTSTACK_MANAGEMENT_TOKEN || '')
+      .describe('Contentstack management/authorization token (from CONTENTSTACK_MANAGEMENT_TOKEN env var)'),
+    content_type_uid: z.string().describe('UID of the content type for this entry'),
+    locale: z.string().default('en-us').describe('Locale for the entry (default: en-us)'),
+    entry_data: z.record(z.string(), z.any()).describe('Entry data as key-value pairs. Global fields should be nested objects with their field data.')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    entry_uid: z.string().optional(),
+    title: z.string().optional(),
+    url: z.string().optional(),
+    notice: z.string().optional(),
+    error: z.string().optional(),
+    response: z.any().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch(
+        `https://api.contentstack.io/v3/content_types/${context.content_type_uid}/entries?locale=${context.locale}`,
+        {
+          method: 'POST',
+          headers: {
+            api_key: context.api_key,
+            authtoken: context.authtoken,
+            authorization: context.authorization,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            entry: context.entry_data
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error_message || JSON.stringify(data.errors) || 'Failed to create entry',
+          response: data
+        };
+      }
+
+      return {
+        success: true,
+        entry_uid: data.entry.uid,
+        title: data.entry.title,
+        url: data.entry.url,
+        notice: data.notice,
+        response: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// ======================
+// PREVIEW ENTRY TOOL
+// ======================
+
+export const previewEntryTool = createTool({
+  id: 'preview-contentstack-entry',
+  description: 'Previews the JSON payload that will be sent to create an entry, helping validate the structure before creation',
+  inputSchema: z.object({
+    content_type_uid: z.string().describe('UID of the content type for this entry'),
+    locale: z.string().default('en-us').describe('Locale for the entry'),
+    entry_data: z.record(z.string(), z.any()).describe('Entry data to preview')
+  }),
+  outputSchema: z.object({
+    type: z.literal('entry-json'),
+    content_type_uid: z.string(),
+    locale: z.string(),
+    json: z.object({
+      entry: z.record(z.string(), z.any())
+    }),
+    endpoint: z.string()
+  }),
+  execute: async ({ context }) => {
+    return {
+      type: 'entry-json' as const,
+      content_type_uid: context.content_type_uid,
+      locale: context.locale,
+      json: {
+        entry: context.entry_data
+      },
+      endpoint: `https://api.contentstack.io/v3/content_types/${context.content_type_uid}/entries?locale=${context.locale}`
+    };
+  }
+});

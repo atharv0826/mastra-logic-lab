@@ -12,6 +12,7 @@ import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } 
 import { onboardingWorkflow } from './workflows/onboarding-workflow';
 import { onboardingAgent } from './agents/onboarding-agent';
 import { contentModelingAgent } from './agents/content-modeling-agent';
+import { entryCreationAgent } from './agents/entry-creation-agent';
 
 export const mastra = new Mastra({
   workflows: {
@@ -21,7 +22,8 @@ export const mastra = new Mastra({
   agents: {
     weatherAgent,
     onboardingAgent,
-    contentModelingAgent
+    contentModelingAgent,
+    entryCreationAgent
   },
   scorers: {
     toolCallAppropriatenessScorer,
