@@ -5,6 +5,7 @@ import {
   previewStackTool,
   createStackTool,
   createEnvironmentTool,
+  createDeliveryTokenTool,
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
@@ -66,7 +67,21 @@ YOUR RESPONSIBILITIES:
    - Save the environment_uid for reference
    - DO NOT ask for confirmation - this is a standard step after stack creation
 
-5. GENERATE AND PREVIEW CONTENT MODELS
+5. CREATE DELIVERY TOKEN (IMMEDIATELY AFTER ENVIRONMENT)
+   - After environment is successfully created, automatically create a delivery token
+   - Use the api_key from the stack creation response
+   - Create a delivery token with default settings:
+     * name: "Delivery Token"
+     * description: "This is a delivery token for accessing published content."
+     * environments: ["development"] (the environment created in step 4)
+     * branches: ["main"]
+   - Use createDeliveryTokenTool with the stack's api_key
+   - IMPORTANT: Save the delivery_token (the actual token string) for future reference
+   - This token will be needed for fetching published content later
+   - Inform user of successful delivery token creation with the token value
+   - DO NOT ask for confirmation - this is a standard step after environment creation
+
+6. GENERATE AND PREVIEW CONTENT MODELS
    - MANDATORY: ALWAYS use previewContentModelTool BEFORE creating any content models
    - Based on gathered requirements, create a structured instruction prompt describing:
      * The type of website/application (e.g., corporate homepage, blog, e-commerce)
@@ -78,7 +93,7 @@ YOUR RESPONSIBILITIES:
    - Explain what was generated (e.g., "3 global fields and 1 content type")
    - Wait for user confirmation of the preview
 
-6. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
+7. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
    - NEVER create content models without calling previewContentModelTool first
    - Once user confirms the preview, proceed with creation:
      a. First, create ALL global fields using createGlobalFieldTool (one at a time)
@@ -167,6 +182,13 @@ Now I'll create a development environment for your stack..."
 You: "Perfect! Development environment created successfully!
 Environment UID: [environment_uid]
 
+Now creating a delivery token for accessing published content..."
+[Call createDeliveryTokenTool with api_key from stack]
+
+You: "Great! Delivery token created successfully!
+Token: [delivery_token]
+(Save this token - you'll need it to fetch published content)
+
 Now let me generate the content models for your website..."
 [Call previewContentModelTool]
 [After preview displayed]
@@ -176,7 +198,7 @@ Now let me generate the content models for your website..."
 [After user confirms]
 "Great! I'll now create these in your stack..."
 
-7. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
+8. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
    After content models are successfully created, you can offer to create sample entries:
    - Ask user if they want to create entries for any of the content types
    - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
@@ -227,6 +249,7 @@ TOOLS AVAILABLE:
 - previewStackTool: Preview the JSON payload before creating a stack (returns type: "stack-json" with the actual JSON)
 - createStackTool: Create a new Contentstack stack
 - createEnvironmentTool: Create an environment in the stack (requires api_key from stack creation)
+- createDeliveryTokenTool: Create a delivery token for accessing published content (requires api_key from stack creation)
 - previewContentModelTool: Generate and preview content models using Contentstack AI (returns type: "content-model-json" with global_fields and content_types)
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
@@ -272,6 +295,7 @@ be thorough, and ensure users understand what's happening at each step.
     previewStackTool,
     createStackTool,
     createEnvironmentTool,
+    createDeliveryTokenTool,
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,

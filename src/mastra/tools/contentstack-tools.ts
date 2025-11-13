@@ -203,6 +203,96 @@ export const createEnvironmentTool = createTool({
 });
 
 // ======================
+// DELIVERY TOKEN CREATION TOOL
+// ======================
+
+export const createDeliveryTokenTool = createTool({
+  id: 'create-contentstack-delivery-token',
+  description: 'Creates a delivery token for accessing published content in Contentstack. The token provides read access to specified environments and branches.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from the created stack)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    name: z.string().default('Delivery Token').describe('Name of the delivery token'),
+    description: z.string().default('This is a delivery token for accessing published content.').describe('Description of the delivery token'),
+    environments: z.array(z.string()).default(['development']).describe('Array of environment names to grant access to'),
+    branches: z.array(z.string()).default(['main']).describe('Array of branch names to grant access to')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    token_uid: z.string().optional(),
+    delivery_token: z.string().optional().describe('The actual delivery token string to use for API calls'),
+    name: z.string().optional(),
+    notice: z.string().optional(),
+    error: z.string().optional(),
+    response: z.any().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch('https://api.contentstack.io/v3/stacks/delivery_tokens', {
+        method: 'POST',
+        headers: {
+          api_key: context.api_key,
+          authtoken: context.authtoken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token: {
+            name: context.name,
+            description: context.description,
+            scope: [
+              {
+                module: 'environment',
+                environments: context.environments,
+                acl: {
+                  read: true
+                }
+              },
+              {
+                module: 'branch',
+                acl: {
+                  read: true
+                },
+                branches: context.branches
+              }
+            ]
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error_message || data.errors || 'Failed to create delivery token',
+          response: data
+        };
+      }
+
+      return {
+        success: true,
+        token_uid: data.token.uid,
+        delivery_token: data.token.token,
+        name: data.token.name,
+        notice: data.notice,
+        response: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// ======================
 // GLOBAL FIELD CREATION TOOL
 // ======================
 
