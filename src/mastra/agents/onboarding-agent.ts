@@ -17,6 +17,7 @@ import {
   publishEntryTool
 } from '../tools/contentstack-tools';
 import { scrapingTool } from '../tools/scrapping-tool';
+import { notifyWebsiteBuilderStartTool, generateNextJSCodeTool } from '../tools/nextjs-code-tool';
 
 /**
  * Contentstack Onboarding Agent
@@ -261,6 +262,14 @@ ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
 10. IMMEDIATELY after successful creation, call publishEntryTool with the management_token to publish the entry
 11. Report successful publication
 
+WEBSITE GENERATION PHASE:
+- When the user asks for a website with static data, OR immediately after an entry is created and published:
+  1) Signal the frontend to switch to Website Builder:
+     - Call notifyWebsiteBuilderStartTool (id: "notify-website-builder-start") to emit a phase event only.
+     - Do NOT generate code yet.
+  2) Wait for the user to provide UI configuration/preferences.
+  3) After configuration is received, call generateNextJSCodeTool with the provided details to generate the UI code.
+
 EXAMPLE ENTRY DATA WITH GLOBAL FIELD:
 {
   "title": "My First Blog Post",
@@ -293,6 +302,8 @@ TOOLS AVAILABLE:
 - previewEntryTool: Preview entry data before creation (returns type: "entry-json")
 - createEntryTool: Create entries (content instances) for any content type
 - publishEntryTool: Publish an entry to specified environments and locales using management_token (automatically called after entry creation)
+- notifyWebsiteBuilderStartTool: Emit a phase event so the frontend can switch to Website Builder UI (no code generation yet)
+- generateNextJSCodeTool: Generate professional Next.js UI after the user provides configuration
 
 CONTENT MODEL GENERATION WORKFLOW (MANDATORY SEQUENCE):
 After creating the stack and gathering requirements:
@@ -340,7 +351,9 @@ be thorough, and ensure users understand what's happening at each step.
     getContentTypeSchema,
     previewEntryTool,
     createEntryTool,
-    publishEntryTool
+    publishEntryTool,
+    notifyWebsiteBuilderStartTool,
+    generateNextJSCodeTool
   },
   memory: new Memory({
     storage: new LibSQLStore({

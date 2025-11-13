@@ -1,6 +1,8 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { nextjsCodeAgent } from '../agents/nextjs-code-agent';
+import { sseBus } from '../../server/sse-bus';
+import { WEBSITE_BUILDER_EVENT } from '../../constants/phase-events';
 
 /**
  * Next.js Code Generator Tool
@@ -8,6 +10,34 @@ import { nextjsCodeAgent } from '../agents/nextjs-code-agent';
  * This tool wraps the Next.js Code Generator Agent, allowing other agents
  * (like the onboarding agent) to generate professional UI code for users.
  */
+
+export const notifyWebsiteBuilderStartTool = createTool({
+  id: 'notify-website-builder-start',
+  description: 'Notify the frontend that the Website Builder phase is starting. This performs no operation besides emitting a tool event.',
+  inputSchema: z.object({
+    reason: z.string().optional().describe('Optional context for why the website builder phase is starting')
+  }),
+  outputSchema: z.object({
+    type: z.literal('phase-event'),
+    name: z.literal('website_builder_start'),
+    label: z.string()
+  }),
+  execute: async ({ context }) => {
+    // Emit SSE so the server can push to connected clients
+    sseBus.emitWebsiteBuilderStart({
+      label: 'Website builder start',
+      phase: 'tool_start',
+      toolId: 'notify-website-builder-start',
+      reason: context?.reason ?? null
+    });
+
+    return {
+      type: 'phase-event' as const,
+      name: 'website_builder_start' as const,
+      label: 'Website builder start'
+    };
+  }
+});
 
 export const generateNextJSCodeTool = createTool({
   id: 'generate-nextjs-code',
@@ -66,16 +96,8 @@ export const generateNextJSCodeTool = createTool({
         fullRequest += `\n\nAdditional context: ${context.additional_context}`;
       }
       
-      // Use thread for conversation memory if resource_id provided
-      let response;
-      if (context.resource_id) {
-        const thread = await nextjsCodeAgent.thread({
-          resourceid: context.resource_id
-        });
-        response = await thread.send(fullRequest);
-      } else {
-        response = await nextjsCodeAgent.generate(fullRequest);
-      }
+      // Generate directly; thread-based API not available in this runtime
+      const response = await nextjsCodeAgent.generate(fullRequest);
       
       // Extract the code and explanation from the response
       const responseText = response.text;
