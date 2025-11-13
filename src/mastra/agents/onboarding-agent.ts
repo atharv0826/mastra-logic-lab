@@ -6,13 +6,15 @@ import {
   createStackTool,
   createEnvironmentTool,
   createDeliveryTokenTool,
+  createManagementTokenTool,
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
   previewEntryTool,
   getContentTypeSchema,
   gatherRequirementsTool,
-  previewContentModelTool
+  previewContentModelTool,
+  publishEntryTool
 } from '../tools/contentstack-tools';
 import { scrapingTool } from '../tools/scrapping-tool';
 
@@ -81,7 +83,21 @@ YOUR RESPONSIBILITIES:
    - Inform user of successful delivery token creation with the token value
    - DO NOT ask for confirmation - this is a standard step after environment creation
 
-6. GENERATE AND PREVIEW CONTENT MODELS
+6. CREATE MANAGEMENT TOKEN (IMMEDIATELY AFTER DELIVERY TOKEN)
+   - After delivery token is successfully created, automatically create a management token
+   - Use the api_key from the stack creation response
+   - Create a management token with default settings:
+     * name: "Management Token"
+     * description: "This is a management token for managing content."
+     * branches: ["main"]
+     * expires_on: automatically set to 1 year from now
+   - Use createManagementTokenTool with the stack's api_key
+   - IMPORTANT: Save the management_token (the actual token string) for future reference
+   - This token will be needed for publishing entries and managing content
+   - Inform user of successful management token creation with the token value
+   - DO NOT ask for confirmation - this is a standard step after delivery token creation
+
+7. GENERATE AND PREVIEW CONTENT MODELS
    - MANDATORY: ALWAYS use previewContentModelTool BEFORE creating any content models
    - Based on gathered requirements, create a structured instruction prompt describing:
      * The type of website/application (e.g., corporate homepage, blog, e-commerce)
@@ -93,7 +109,7 @@ YOUR RESPONSIBILITIES:
    - Explain what was generated (e.g., "3 global fields and 1 content type")
    - Wait for user confirmation of the preview
 
-7. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
+8. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
    - NEVER create content models without calling previewContentModelTool first
    - Once user confirms the preview, proceed with creation:
      a. First, create ALL global fields using createGlobalFieldTool (one at a time)
@@ -189,6 +205,13 @@ You: "Great! Delivery token created successfully!
 Token: [delivery_token]
 (Save this token - you'll need it to fetch published content)
 
+Now creating a management token for content management..."
+[Call createManagementTokenTool with api_key from stack]
+
+You: "Perfect! Management token created successfully!
+Token: [management_token]
+(Save this token - you'll need it to publish and manage content)
+
 Now let me generate the content models for your website..."
 [Call previewContentModelTool]
 [After preview displayed]
@@ -198,7 +221,7 @@ Now let me generate the content models for your website..."
 [After user confirms]
 "Great! I'll now create these in your stack..."
 
-8. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
+9. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
    After content models are successfully created, you can offer to create sample entries:
    - Ask user if they want to create entries for any of the content types
    - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
@@ -208,6 +231,16 @@ Now let me generate the content models for your website..."
    - Wait for user confirmation of the preview
    - ONLY after confirmation, use createEntryTool to create the entry
    - Handle global fields intelligently as nested objects
+   
+10. PUBLISH ENTRY (IMMEDIATELY AFTER ENTRY CREATION)
+   After an entry is successfully created, automatically publish it:
+   - Use publishEntryTool with the entry_uid from the creation response
+   - Use the api_key from stack creation
+   - Use the management_token from step 6 (management token creation)
+   - Publish to the "development" environment by default
+   - Publish to the locale used during entry creation (default: "en-us")
+   - Inform user of successful publication
+   - DO NOT ask for confirmation - this is a standard step after entry creation
 
 ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
 1. User asks to create an entry (e.g., "Create a blog post entry")
@@ -225,6 +258,8 @@ ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
 7. WAIT for user confirmation
 8. ONLY after confirmation, call createEntryTool
 9. Report success with entry UID and other details
+10. IMMEDIATELY after successful creation, call publishEntryTool with the management_token to publish the entry
+11. Report successful publication
 
 EXAMPLE ENTRY DATA WITH GLOBAL FIELD:
 {
@@ -250,12 +285,14 @@ TOOLS AVAILABLE:
 - createStackTool: Create a new Contentstack stack
 - createEnvironmentTool: Create an environment in the stack (requires api_key from stack creation)
 - createDeliveryTokenTool: Create a delivery token for accessing published content (requires api_key from stack creation)
+- createManagementTokenTool: Create a management token for managing and publishing content (requires api_key from stack creation)
 - previewContentModelTool: Generate and preview content models using Contentstack AI (returns type: "content-model-json" with global_fields and content_types)
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
 - getContentTypeSchema: Fetch content type schema to understand structure before creating entries
 - previewEntryTool: Preview entry data before creation (returns type: "entry-json")
 - createEntryTool: Create entries (content instances) for any content type
+- publishEntryTool: Publish an entry to specified environments and locales using management_token (automatically called after entry creation)
 
 CONTENT MODEL GENERATION WORKFLOW (MANDATORY SEQUENCE):
 After creating the stack and gathering requirements:
@@ -296,12 +333,14 @@ be thorough, and ensure users understand what's happening at each step.
     createStackTool,
     createEnvironmentTool,
     createDeliveryTokenTool,
+    createManagementTokenTool,
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,
     getContentTypeSchema,
     previewEntryTool,
-    createEntryTool
+    createEntryTool,
+    publishEntryTool
   },
   memory: new Memory({
     storage: new LibSQLStore({
