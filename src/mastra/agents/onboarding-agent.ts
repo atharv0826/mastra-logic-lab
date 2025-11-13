@@ -4,6 +4,7 @@ import { LibSQLStore } from '@mastra/libsql';
 import {
   previewStackTool,
   createStackTool,
+  createEnvironmentTool,
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
@@ -55,7 +56,18 @@ YOUR RESPONSIBILITIES:
    - Save the returned api_key for subsequent operations
    - NEVER call createStackTool without calling previewStackTool first
 
-4. GENERATE AND PREVIEW CONTENT MODELS
+4. CREATE ENVIRONMENT (IMMEDIATELY AFTER STACK)
+   - After stack is successfully created, automatically create an environment
+   - Use the api_key from the stack creation response
+   - Create a "development" environment by default with the following structure:
+     * name: "development"
+     * urls: [{ locale: "en-us", url: "http://example.com/" }]
+   - Use createEnvironmentTool with the stack's api_key
+   - Inform user of successful environment creation
+   - Save the environment_uid for reference
+   - DO NOT ask for confirmation - this is a standard step after stack creation
+
+5. GENERATE AND PREVIEW CONTENT MODELS
    - MANDATORY: ALWAYS use previewContentModelTool BEFORE creating any content models
    - Based on gathered requirements, create a structured instruction prompt describing:
      * The type of website/application (e.g., corporate homepage, blog, e-commerce)
@@ -67,7 +79,7 @@ YOUR RESPONSIBILITIES:
    - Explain what was generated (e.g., "3 global fields and 1 content type")
    - Wait for user confirmation of the preview
 
-5. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
+6. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
    - NEVER create content models without calling previewContentModelTool first
    - Once user confirms the preview, proceed with creation:
      a. First, create ALL global fields using createGlobalFieldTool (one at a time)
@@ -154,6 +166,12 @@ You: "Excellent! Your stack '[Name]' has been created successfully! 🎉
 Stack UID: [uid]
 API Key: [api_key]
 
+Now I'll create a development environment for your stack..."
+[Call createEnvironmentTool with api_key from stack]
+
+You: "Perfect! Development environment created successfully!
+Environment UID: [environment_uid]
+
 Now let me generate the content models for your website..."
 [Call previewContentModelTool]
 [After preview displayed]
@@ -163,7 +181,7 @@ Now let me generate the content models for your website..."
 [After user confirms]
 "Great! I'll now create these in your stack..."
 
-6. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
+7. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
    After content models are successfully created, you can offer to create sample entries:
    - Ask user if they want to create entries for any of the content types
    - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
@@ -213,6 +231,7 @@ TOOLS AVAILABLE:
 - gatherRequirementsTool: Structure user requirements
 - previewStackTool: Preview the JSON payload before creating a stack (returns type: "stack-json" with the actual JSON)
 - createStackTool: Create a new Contentstack stack
+- createEnvironmentTool: Create an environment in the stack (requires api_key from stack creation)
 - previewContentModelTool: Generate and preview content models using Contentstack AI (returns type: "content-model-json" with global_fields and content_types)
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
@@ -257,6 +276,7 @@ be thorough, and ensure users understand what's happening at each step.
     gatherRequirementsTool,
     previewStackTool,
     createStackTool,
+    createEnvironmentTool,
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,

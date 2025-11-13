@@ -130,6 +130,79 @@ export const createStackTool = createTool({
 });
 
 // ======================
+// ENVIRONMENT CREATION TOOL
+// ======================
+
+export const createEnvironmentTool = createTool({
+  id: 'create-contentstack-environment',
+  description: 'Creates an environment in a Contentstack stack with the specified name and URLs',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from the created stack)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    name: z.string().describe('Name of the environment (e.g., development, staging, production)'),
+    urls: z.array(z.object({
+      locale: z.string().describe('Locale code (e.g., en-us)'),
+      url: z.string().describe('URL for this locale')
+    })).default([{ locale: 'en-us', url: 'http://example.com/' }]).describe('Array of locale-URL mappings')
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    environment_uid: z.string().optional(),
+    name: z.string().optional(),
+    notice: z.string().optional(),
+    error: z.string().optional(),
+    response: z.any().optional()
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch('https://api.contentstack.io/v3/environments', {
+        method: 'POST',
+        headers: {
+          api_key: context.api_key,
+          authtoken: context.authtoken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          environment: {
+            name: context.name,
+            urls: context.urls
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error_message || data.errors || 'Failed to create environment',
+          response: data
+        };
+      }
+
+      return {
+        success: true,
+        environment_uid: data.environment.uid,
+        name: data.environment.name,
+        notice: data.notice,
+        response: data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
+    }
+  }
+});
+
+// ======================
 // GLOBAL FIELD CREATION TOOL
 // ======================
 
