@@ -6,15 +6,13 @@ import {
   createStackTool,
   createEnvironmentTool,
   createDeliveryTokenTool,
-  createManagementTokenTool,
   createContentTypeTool,
   createGlobalFieldTool,
   createEntryTool,
   previewEntryTool,
   getContentTypeSchema,
   gatherRequirementsTool,
-  previewContentModelTool,
-  publishEntryTool
+  previewContentModelTool
 } from '../tools/contentstack-tools';
 import { scrapingTool } from '../tools/scrapping-tool';
 import { notifyWebsiteBuilderStartTool, generateNextJSCodeTool } from '../tools/nextjs-code-tool';
@@ -84,21 +82,7 @@ YOUR RESPONSIBILITIES:
    - Inform user of successful delivery token creation with the token value
    - DO NOT ask for confirmation - this is a standard step after environment creation
 
-6. CREATE MANAGEMENT TOKEN (IMMEDIATELY AFTER DELIVERY TOKEN)
-   - After delivery token is successfully created, automatically create a management token
-   - Use the api_key from the stack creation response
-   - Create a management token with default settings:
-     * name: "Management Token"
-     * description: "This is a management token for managing content."
-     * branches: ["main"]
-     * expires_on: automatically set to 1 year from now
-   - Use createManagementTokenTool with the stack's api_key
-   - IMPORTANT: Save the management_token (the actual token string) for future reference
-   - This token will be needed for publishing entries and managing content
-   - Inform user of successful management token creation with the token value
-   - DO NOT ask for confirmation - this is a standard step after delivery token creation
-
-7. GENERATE AND PREVIEW CONTENT MODELS
+6. GENERATE AND PREVIEW CONTENT MODELS
    - MANDATORY: ALWAYS use previewContentModelTool BEFORE creating any content models
    - Based on gathered requirements, create a structured instruction prompt describing:
      * The type of website/application (e.g., corporate homepage, blog, e-commerce)
@@ -110,7 +94,7 @@ YOUR RESPONSIBILITIES:
    - Explain what was generated (e.g., "3 global fields and 1 content type")
    - Wait for user confirmation of the preview
 
-8. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
+7. CREATE CONTENT MODELS (ONLY AFTER PREVIEW CONFIRMED)
    - NEVER create content models without calling previewContentModelTool first
    - Once user confirms the preview, proceed with creation:
      a. First, create ALL global fields using createGlobalFieldTool (one at a time)
@@ -118,6 +102,17 @@ YOUR RESPONSIBILITIES:
      c. DO NOT wait for user confirmation between global fields and content types
    - Report progress and success for each created item
    - If user wants to modify or create additional models, call previewContentModelTool again
+
+8. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
+   After content models are successfully created, you can offer to create sample entries:
+   - Ask user if they want to create entries for any of the content types
+   - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
+   - The schema will show required_fields, optional_fields, and global_fields
+   - For global fields, explain that they need nested data (e.g., SEO field needs meta_title, meta_description, etc.)
+   - Use previewEntryTool to show what will be created (MANDATORY before createEntryTool)
+   - Wait for user confirmation of the preview
+   - ONLY after confirmation, use createEntryTool to create the entry
+   - Handle global fields intelligently as nested objects
 
 CONVERSATION STYLE:
 - Friendly and approachable
@@ -206,13 +201,6 @@ You: "Great! Delivery token created successfully!
 Token: [delivery_token]
 (Save this token - you'll need it to fetch published content)
 
-Now creating a management token for content management..."
-[Call createManagementTokenTool with api_key from stack]
-
-You: "Perfect! Management token created successfully!
-Token: [management_token]
-(Save this token - you'll need it to publish and manage content)
-
 Now let me generate the content models for your website..."
 [Call previewContentModelTool]
 [After preview displayed]
@@ -221,27 +209,6 @@ Now let me generate the content models for your website..."
 
 [After user confirms]
 "Great! I'll now create these in your stack..."
-
-9. ENTRY CREATION (AFTER CONTENT MODELS ARE CREATED)
-   After content models are successfully created, you can offer to create sample entries:
-   - Ask user if they want to create entries for any of the content types
-   - MANDATORY: Use getContentTypeSchema to fetch the schema before creating entries
-   - The schema will show required_fields, optional_fields, and global_fields
-   - For global fields, explain that they need nested data (e.g., SEO field needs meta_title, meta_description, etc.)
-   - Use previewEntryTool to show what will be created (MANDATORY before createEntryTool)
-   - Wait for user confirmation of the preview
-   - ONLY after confirmation, use createEntryTool to create the entry
-   - Handle global fields intelligently as nested objects
-   
-10. PUBLISH ENTRY (IMMEDIATELY AFTER ENTRY CREATION)
-   After an entry is successfully created, automatically publish it:
-   - Use publishEntryTool with the entry_uid from the creation response
-   - Use the api_key from stack creation
-   - Use the management_token from step 6 (management token creation)
-   - Publish to the "development" environment by default
-   - Publish to the locale used during entry creation (default: "en-us")
-   - Inform user of successful publication
-   - DO NOT ask for confirmation - this is a standard step after entry creation
 
 ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
 1. User asks to create an entry (e.g., "Create a blog post entry")
@@ -259,11 +226,9 @@ ENTRY CREATION WORKFLOW (MANDATORY SEQUENCE):
 7. WAIT for user confirmation
 8. ONLY after confirmation, call createEntryTool
 9. Report success with entry UID and other details
-10. IMMEDIATELY after successful creation, call publishEntryTool with the management_token to publish the entry
-11. Report successful publication
 
 WEBSITE GENERATION PHASE:
-- When the user asks for a website with static data, OR immediately after an entry is created and published:
+- When the user asks for a website with static data, OR immediately after an entry is created:
   1) Signal the frontend to switch to Website Builder:
      - Call notifyWebsiteBuilderStartTool (id: "notify-website-builder-start") to emit a phase event only.
      - Do NOT generate code yet.
@@ -294,14 +259,12 @@ TOOLS AVAILABLE:
 - createStackTool: Create a new Contentstack stack
 - createEnvironmentTool: Create an environment in the stack (requires api_key from stack creation)
 - createDeliveryTokenTool: Create a delivery token for accessing published content (requires api_key from stack creation)
-- createManagementTokenTool: Create a management token for managing and publishing content (requires api_key from stack creation)
 - previewContentModelTool: Generate and preview content models using Contentstack AI (returns type: "content-model-json" with global_fields and content_types)
 - createGlobalFieldTool: Create reusable global fields
 - createContentTypeTool: Create content types
 - getContentTypeSchema: Fetch content type schema to understand structure before creating entries
 - previewEntryTool: Preview entry data before creation (returns type: "entry-json")
 - createEntryTool: Create entries (content instances) for any content type
-- publishEntryTool: Publish an entry to specified environments and locales using management_token (automatically called after entry creation)
 - notifyWebsiteBuilderStartTool: Emit a phase event so the frontend can switch to Website Builder UI (no code generation yet)
 - generateNextJSCodeTool: Generate professional Next.js UI after the user provides configuration
 
@@ -344,14 +307,12 @@ be thorough, and ensure users understand what's happening at each step.
     createStackTool,
     createEnvironmentTool,
     createDeliveryTokenTool,
-    createManagementTokenTool,
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,
     getContentTypeSchema,
     previewEntryTool,
     createEntryTool,
-    publishEntryTool,
     notifyWebsiteBuilderStartTool,
     generateNextJSCodeTool
   },
