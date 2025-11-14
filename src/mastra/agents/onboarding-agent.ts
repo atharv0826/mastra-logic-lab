@@ -2,6 +2,9 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import {
+  fetchDeliveryTokenTool,
+  createManagementTokenTool,
+  getEntryAndGenerateUITool,
   previewStackTool,
   createStackTool,
   createEnvironmentTool,
@@ -312,12 +315,15 @@ be thorough, and ensure users understand what's happening at each step.
     createStackTool,
     createEnvironmentTool,
     createDeliveryTokenTool,
+    fetchDeliveryTokenTool,
+    createManagementTokenTool,
     previewContentModelTool,
     createContentTypeTool,
     createGlobalFieldTool,
     getContentTypeSchema,
     previewEntryTool,
     createEntryTool,
+    getEntryAndGenerateUITool,
     notifyWebsiteBuilderStartTool,
     generateNextJSCodeTool
   },
