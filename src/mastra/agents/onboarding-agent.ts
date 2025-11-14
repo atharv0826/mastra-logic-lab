@@ -325,7 +325,21 @@ WEBSITE GENERATION PHASE:
      - Call notifyWebsiteBuilderStartTool (id: "notify-website-builder-start") to emit a phase event only.
      - Do NOT generate code yet.
   2) Wait for the user to provide UI configuration/preferences.
-  3) After configuration is received, call generateNextJSCodeTool with the provided details to generate the UI code.
+  3) After configuration is received, call generateNextJSCodeTool with ALL required details:
+     - CRITICAL: You MUST pass ALL tokens from previous steps:
+       * api_key: from stack creation (step 3)
+       * authtoken: from CONTENTSTACK_AUTH_TOKEN environment variable
+       * delivery_token: from delivery token creation (step 5)
+       * preview_token: from delivery token creation (step 5)
+       * management_token: from management token creation (step 6)
+       * content_type_uid: the content type of the entry
+       * entry_uid: the UID of the created entry
+       * environment: usually "development"
+       * locale: usually "en-us"
+       * branch: usually "main"
+       * region: usually "us"
+     - NEVER call generateNextJSCodeTool without ALL tokens
+     - The tool will generate .env file with all these actual token values
 
 EXAMPLE ENTRY DATA WITH GLOBAL FIELD AND IMAGE:
 {
@@ -379,7 +393,7 @@ TOOLS AVAILABLE:
 - uploadAssetTool: Download an image/file from URL and upload to Contentstack (returns asset_uid for use in file/image fields)
 - createEntryTool: Create entries (content instances) for any content type
 - notifyWebsiteBuilderStartTool: Emit a phase event so the frontend can switch to Website Builder UI (no code generation yet)
-- generateNextJSCodeTool: Generate professional Next.js UI after the user provides configuration
+- generateNextJSCodeTool: Generate professional Next.js UI with ALL tokens (api_key, authtoken, delivery_token, preview_token, management_token) - MUST pass all tokens for proper .env generation
 
 CONTENT MODEL GENERATION WORKFLOW (MANDATORY SEQUENCE):
 After creating the stack and gathering requirements:

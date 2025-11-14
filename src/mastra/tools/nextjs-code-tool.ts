@@ -49,17 +49,22 @@ export const generateNextJSCodeTool = createTool({
   id: 'generate-nextjs-code',
   description: `Generate complete Next.js application with Contentstack integration.
   
-  Context-aware: Automatically uses entry_uid from recent createEntryTool call if available.
+  CRITICAL: Requires ALL tokens from previous setup steps:
+  - api_key (from stack creation)
+  - authtoken (from environment)
+  - delivery_token (from delivery token creation)
+  - preview_token (from delivery token creation) 
+  - management_token (from management token creation)
   
   Generates 2 files:
   1. App.tsx - Complete Next.js page with Live Preview, Visual Builder, entry fetching
-  2. .env - Environment variables with actual values from context
+  2. .env - Environment variables with ALL actual token values from context
   
   Features:
   - Fetches entry using Management API (works for all entries including drafts)
   - Includes Contentstack Live Preview SDK integration
   - Adds Visual Builder CSLP tags for editing
-  - Generates .env with all required Contentstack configuration
+  - Generates .env with all required Contentstack configuration and ALL tokens
   - Production-ready code with proper TypeScript types
   `,
 
@@ -78,16 +83,16 @@ export const generateNextJSCodeTool = createTool({
       .describe('Contentstack auth token'),
     delivery_token: z
       .string()
-      .optional()
-      .describe('Delivery token for published content'),
+      .default(process.env.CONTENTSTACK_DELIVERY_TOKEN || '')
+      .describe('Delivery token for published content (from delivery token creation)'),
     preview_token: z
       .string()
-      .optional()
-      .describe('Preview token for draft content'),
+      .default(process.env.CONTENTSTACK_PREVIEW_TOKEN || '')
+      .describe('Preview token for draft content (from delivery token creation)'),
     management_token: z
       .string()
-      .optional()
-      .describe('Management token for content management'),
+      .default(process.env.CONTENTSTACK_MANAGEMENT_TOKEN || '')
+      .describe('Management token for content management (from management token creation)'),
     environment: z
       .string()
       .default('development')
@@ -219,11 +224,12 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
 
 # Stack Configuration
 CONTENTSTACK_API_KEY=${api_key}
-CONTENTSTACK_DELIVERY_TOKEN=${delivery_token || 'your_delivery_token_here'}
+CONTENTSTACK_DELIVERY_TOKEN=${delivery_token}
 CONTENTSTACK_ENVIRONMENT=${environment}
 CONTENTSTACK_BRANCH=${branch}
-CONTENTSTACK_PREVIEW_TOKEN=${preview_token || 'your_preview_token_here'}
-CONTENTSTACK_MANAGEMENT_TOKEN=${management_token || 'your_management_token_here'}
+CONTENTSTACK_PREVIEW_TOKEN=${preview_token}
+CONTENTSTACK_MANAGEMENT_TOKEN=${management_token}
+CONTENTSTACK_AUTH_TOKEN=${authtoken}
 
 # Hosts
 CONTENTSTACK_HOST=${hosts.cdn}

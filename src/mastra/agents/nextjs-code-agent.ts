@@ -711,7 +711,7 @@ When a URL is provided, use their content/structure but deliver DRAMATICALLY IMP
 Make every pixel count. Make every color choice intentional. Make every animation smooth.
 Be the BEST. Create MASTERPIECES. Blow minds with your UI excellence.
   `,
-  model: 'openai/codex-mini-latest',
+  model: 'openai/gpt-5-codex',
   tools: {
     scrapingTool,
     getEntryAndGenerateUITool
