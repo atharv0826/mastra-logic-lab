@@ -1,6 +1,21 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
+/**
+ * IMPORTANT: All Contentstack API calls use 'authtoken' header, NOT 'authorization'
+ * 
+ * Correct format for Contentstack API:
+ * headers: {
+ *   authtoken: context.authtoken,  // ✅ Correct
+ *   api_key: context.api_key
+ * }
+ * 
+ * Do NOT use:
+ * headers: {
+ *   authorization: context.authtoken  // ❌ Wrong - this is for other APIs like DumplingAI
+ * }
+ */
+
 // ======================
 // STACK PREVIEW TOOL
 // ======================

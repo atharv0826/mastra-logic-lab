@@ -67,6 +67,7 @@ const scrapeWebsite = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      // NOTE: DumplingAI API uses Authorization Bearer, NOT authtoken like Contentstack
       'Authorization': `Bearer ${dumplingApiKey}`,
     },
     body: JSON.stringify({
