@@ -182,9 +182,9 @@ export const generateNextJSCodeTool = createTool({
       > = {
         us: {
           cdn: 'cdn.contentstack.io',
-          app: 'https://app.contentstack.com',
-          api: 'https://api.contentstack.io',
-          preview: 'https://rest-preview.contentstack.com',
+          app: 'app.contentstack.com',
+          api: 'api.contentstack.io',
+          preview: 'rest-preview.contentstack.com',
         },
         eu: {
           cdn: 'eu-cdn.contentstack.com',
@@ -293,6 +293,7 @@ import { Page } from "@/types";
 import { onEntryChange } from "@/config";
 import { setDataForChromeExtension } from "@/utils";
 import { getEntryByUrl } from "@/services";
+import ContentstackLivePreview from "@contentstack/live-preview-utils";
 
 export default function Home() {
   const [data, setData] = useState<Page.LandingPage["entry"] | null>(null);
@@ -325,9 +326,11 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    console.log("isLivePreviewEnabled:", process.env.isLivePreviewEnabled);
-    onEntryChange(fetchData);
+ useEffect(() => {
+    ContentstackLivePreview.onEntryChange(() => {
+      console.log("onEntryChange");
+      fetchData();
+    });
   }, []);
 
   return (
