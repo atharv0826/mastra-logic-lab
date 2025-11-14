@@ -306,7 +306,7 @@ export const createEnvironmentTool = createTool({
 export const createDeliveryTokenTool = createTool({
   id: 'create-contentstack-delivery-token',
   description:
-    'Creates a delivery token for accessing published content in Contentstack. Context-aware: automatically uses api_key from stack creation, environments from environment creation, and branches from context.',
+    'Creates a delivery token for accessing published content in Contentstack. Also automatically creates a preview token for accessing unpublished content. Context-aware: automatically uses api_key from stack creation, environments from environment creation, and branches from context.',
   inputSchema: z.object({
     api_key: z
       .string()
@@ -344,6 +344,10 @@ export const createDeliveryTokenTool = createTool({
       .string()
       .optional()
       .describe('The actual delivery token string to use for API calls'),
+    preview_token: z
+      .string()
+      .optional()
+      .describe('The preview token string for accessing unpublished content'),
     name: z.string().optional(),
     notice: z.string().optional(),
     error: z.string().optional(),
@@ -361,7 +365,7 @@ export const createDeliveryTokenTool = createTool({
 
       const baseUrl = regionUrls[context.region] || regionUrls.us;
 
-      const response = await fetch(`${baseUrl}/api/v3/stacks/delivery_tokens`, {
+      const response = await fetch(`${baseUrl}/api/v3/stacks/delivery_tokens?create_with_preview_token=true`, {
         method: 'POST',
         headers: {
           accept: 'application/json, text/plain, */*',
@@ -411,6 +415,7 @@ export const createDeliveryTokenTool = createTool({
         success: true,
         token_uid: data.token.uid,
         delivery_token: data.token.token,
+        preview_token: data.token.preview_token,
         name: data.token.name,
         notice: data.notice,
         response: data,
