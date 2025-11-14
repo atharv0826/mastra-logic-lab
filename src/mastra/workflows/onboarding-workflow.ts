@@ -1,15 +1,15 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { 
-  createStackTool, 
-  createContentTypeTool, 
+import {
+  createStackTool,
+  createContentTypeTool,
   createGlobalFieldTool,
-  previewStackTool
+  createDeliveryTokenTool,
 } from '../tools/contentstack-tools';
 
 /**
  * Contentstack Onboarding Workflow
- * 
+ *
  * This workflow orchestrates the complete onboarding process with STRICT preview validation:
  * 1. Validate user requirements and inputs
  * 2. Preview stack configuration before creation (STRICT validation)
@@ -23,35 +23,45 @@ import {
 
 // Define schemas
 const triggerSchema = z.object({
-    // User inputs
-    user_requirements: z.string().describe('Description of what the user wants to build'),
-    
-    // Stack configuration
-    stack_name: z.string().describe('Name for the new stack'),
-    stack_description: z.string().describe('Description of the stack'),
-    
-    // Contentstack credentials
-    authtoken: z.string().describe('Contentstack auth token'),
-    organization_uid: z.string().describe('Organization UID'),
-    
-    // Optional
-    master_locale: z.string().default('en-us').optional(),
-    
-    // Generated schemas (from content modeling agent)
-    content_model: z.object({
-      global_fields: z.array(z.object({
-        title: z.string(),
-        uid: z.string(),
-        description: z.string().optional(),
-        schema: z.array(z.any()),
-      })).optional(),
-      content_types: z.array(z.object({
-        title: z.string(),
-        uid: z.string(),
-        description: z.string().optional(),
-        schema: z.array(z.any()),
-      })),
-    }).describe('Generated content model from AI agent'),
+  // User inputs
+  user_requirements: z
+    .string()
+    .describe('Description of what the user wants to build'),
+
+  // Stack configuration
+  stack_name: z.string().describe('Name for the new stack'),
+  stack_description: z.string().describe('Description of the stack'),
+
+  // Contentstack credentials
+  authtoken: z.string().describe('Contentstack auth token'),
+  organization_uid: z.string().describe('Organization UID'),
+
+  // Optional
+  master_locale: z.string().default('en-us').optional(),
+
+  // Generated schemas (from content modeling agent)
+  content_model: z
+    .object({
+      global_fields: z
+        .array(
+          z.object({
+            title: z.string(),
+            uid: z.string(),
+            description: z.string().optional(),
+            schema: z.array(z.any()),
+          }),
+        )
+        .optional(),
+      content_types: z.array(
+        z.object({
+          title: z.string(),
+          uid: z.string(),
+          description: z.string().optional(),
+          schema: z.array(z.any()),
+        }),
+      ),
+    })
+    .describe('Generated content model from AI agent'),
 });
 
 const outputSchema = z.object({
@@ -85,12 +95,12 @@ const validateInputsStep = createStep({
     content_model: z.any(),
   }),
   execute: async ({ inputData }) => {
-    const { 
-      stack_name, 
-      stack_description, 
-      authtoken, 
+    const {
+      stack_name,
+      stack_description,
+      authtoken,
       organization_uid,
-      content_model 
+      content_model,
     } = inputData || {};
 
     if (!stack_name || !stack_description) {
@@ -98,14 +108,22 @@ const validateInputsStep = createStep({
     }
 
     if (!authtoken || !organization_uid) {
-      throw new Error('Contentstack credentials (authtoken and organization_uid) are required');
+      throw new Error(
+        'Contentstack credentials (authtoken and organization_uid) are required',
+      );
     }
 
-    if (!content_model || !content_model.content_types || content_model.content_types.length === 0) {
-      throw new Error('At least one content type must be defined in content_model');
+    if (
+      !content_model ||
+      !content_model.content_types ||
+      content_model.content_types.length === 0
+    ) {
+      throw new Error(
+        'At least one content type must be defined in content_model',
+      );
     }
 
-    return { 
+    return {
       validated: true,
       stack_name,
       stack_description,
@@ -139,7 +157,14 @@ const previewStackStep = createStep({
     stack_preview: z.any(),
   }),
   execute: async ({ inputData }) => {
-    const { stack_name, stack_description, authtoken, organization_uid, content_model, validated } = inputData;
+    const {
+      stack_name,
+      stack_description,
+      authtoken,
+      organization_uid,
+      content_model,
+      validated,
+    } = inputData;
     const master_locale = inputData.master_locale || 'en-us';
 
     // Preview the stack configuration
@@ -194,7 +219,16 @@ const createStackStep = createStep({
     api_key: z.string().optional(),
   }),
   execute: async ({ inputData }) => {
-    const { stack_name, stack_description, authtoken, organization_uid, content_model, validated, master_locale, stack_preview } = inputData;
+    const {
+      stack_name,
+      stack_description,
+      authtoken,
+      organization_uid,
+      content_model,
+      validated,
+      master_locale,
+      stack_preview,
+    } = inputData;
 
     console.log(`[CREATE] Creating stack after preview validation`);
 
@@ -213,7 +247,9 @@ const createStackStep = createStep({
       throw new Error(`Failed to create stack: ${result.error}`);
     }
 
-    console.log(`[SUCCESS] Stack created: ${result.name} (${result.stack_uid})`);
+    console.log(
+      `[SUCCESS] Stack created: ${result.name} (${result.stack_uid})`,
+    );
 
     return {
       validated,
@@ -253,8 +289,17 @@ const previewGlobalFieldsStep = createStep({
     global_fields_preview: z.array(z.any()),
   }),
   execute: async ({ inputData }) => {
-    const { api_key, authtoken, content_model, validated, stack_name, stack_description, organization_uid, stack_uid } = inputData;
-    
+    const {
+      api_key,
+      authtoken,
+      content_model,
+      validated,
+      stack_name,
+      stack_description,
+      organization_uid,
+      stack_uid,
+    } = inputData;
+
     if (!api_key) {
       throw new Error('API key is required to preview global fields');
     }
@@ -271,9 +316,11 @@ const previewGlobalFieldsStep = createStep({
           schema: globalField.schema,
           preview_validated: true,
         });
-        
+
         // Log preview information
-        console.log(`[PREVIEW] Global Field: ${globalField.title} (${globalField.uid})`);
+        console.log(
+          `[PREVIEW] Global Field: ${globalField.title} (${globalField.uid})`,
+        );
         console.log(JSON.stringify(globalField.schema, null, 2));
       }
     }
@@ -319,8 +366,18 @@ const createGlobalFieldsStep = createStep({
     global_fields: z.array(z.any()),
   }),
   execute: async ({ inputData }) => {
-    const { api_key, authtoken, content_model, validated, stack_name, stack_description, organization_uid, stack_uid, global_fields_preview } = inputData;
-    
+    const {
+      api_key,
+      authtoken,
+      content_model,
+      validated,
+      stack_name,
+      stack_description,
+      organization_uid,
+      stack_uid,
+      global_fields_preview,
+    } = inputData;
+
     if (!api_key) {
       throw new Error('API key is required to create global fields');
     }
@@ -329,8 +386,10 @@ const createGlobalFieldsStep = createStep({
 
     // Only create global fields if they were previewed
     if (global_fields_preview && global_fields_preview.length > 0) {
-      console.log(`[CREATE] Creating ${global_fields_preview.length} global fields after preview validation`);
-      
+      console.log(
+        `[CREATE] Creating ${global_fields_preview.length} global fields after preview validation`,
+      );
+
       for (const globalField of content_model.global_fields) {
         const result = await createGlobalFieldTool.execute({
           context: {
@@ -360,7 +419,10 @@ const createGlobalFieldsStep = createStep({
             status: 'failed',
             error: result.error,
           });
-          console.log(`[ERROR] Failed to create global field: ${globalField.title}`, result.error);
+          console.log(
+            `[ERROR] Failed to create global field: ${globalField.title}`,
+            result.error,
+          );
         }
       }
     }
@@ -409,8 +471,19 @@ const previewContentTypesStep = createStep({
     content_types_preview: z.array(z.any()),
   }),
   execute: async ({ inputData }) => {
-    const { api_key, authtoken, content_model, validated, stack_name, stack_description, organization_uid, stack_uid, global_fields_created, global_fields } = inputData;
-    
+    const {
+      api_key,
+      authtoken,
+      content_model,
+      validated,
+      stack_name,
+      stack_description,
+      organization_uid,
+      stack_uid,
+      global_fields_created,
+      global_fields,
+    } = inputData;
+
     if (!api_key) {
       throw new Error('API key is required to preview content types');
     }
@@ -427,9 +500,11 @@ const previewContentTypesStep = createStep({
           schema: contentType.schema,
           preview_validated: true,
         });
-        
+
         // Log preview information
-        console.log(`[PREVIEW] Content Type: ${contentType.title} (${contentType.uid})`);
+        console.log(
+          `[PREVIEW] Content Type: ${contentType.title} (${contentType.uid})`,
+        );
         console.log(JSON.stringify(contentType.schema, null, 2));
       }
     }
@@ -481,8 +556,20 @@ const createContentTypesStep = createStep({
     content_types: z.array(z.any()),
   }),
   execute: async ({ inputData }) => {
-    const { api_key, authtoken, content_model, validated, stack_name, stack_description, organization_uid, stack_uid, global_fields_created, global_fields, content_types_preview } = inputData;
-    
+    const {
+      api_key,
+      authtoken,
+      content_model,
+      validated,
+      stack_name,
+      stack_description,
+      organization_uid,
+      stack_uid,
+      global_fields_created,
+      global_fields,
+      content_types_preview,
+    } = inputData;
+
     if (!api_key) {
       throw new Error('API key is required to create content types');
     }
@@ -491,8 +578,10 @@ const createContentTypesStep = createStep({
 
     // Only create content types if they were previewed
     if (content_types_preview && content_types_preview.length > 0) {
-      console.log(`[CREATE] Creating ${content_types_preview.length} content types after preview validation`);
-      
+      console.log(
+        `[CREATE] Creating ${content_types_preview.length} content types after preview validation`,
+      );
+
       for (const contentType of content_model.content_types) {
         const result = await createContentTypeTool.execute({
           context: {
@@ -522,7 +611,10 @@ const createContentTypesStep = createStep({
             status: 'failed',
             error: result.error,
           });
-          console.log(`[ERROR] Failed to create content type: ${contentType.title}`, result.error);
+          console.log(
+            `[ERROR] Failed to create content type: ${contentType.title}`,
+            result.error,
+          );
         }
       }
     }
@@ -590,7 +682,9 @@ const generateSummaryStep = createStep({
       statistics: {
         global_fields_created: globalFieldsInfo.global_fields_created,
         content_types_created: contentTypesInfo.content_types_created,
-        total_items: globalFieldsInfo.global_fields_created + contentTypesInfo.content_types_created,
+        total_items:
+          globalFieldsInfo.global_fields_created +
+          contentTypesInfo.content_types_created,
       },
     };
 
@@ -605,13 +699,12 @@ export const onboardingWorkflow = createWorkflow({
   outputSchema: outputSchema,
 })
   .then(validateInputsStep)
-  .then(previewStackStep)             // PREVIEW before creation
+  .then(previewStackStep) // PREVIEW before creation
   .then(createStackStep)
-  .then(previewGlobalFieldsStep)      // PREVIEW before creation
+  .then(previewGlobalFieldsStep) // PREVIEW before creation
   .then(createGlobalFieldsStep)
-  .then(previewContentTypesStep)      // PREVIEW before creation
+  .then(previewContentTypesStep) // PREVIEW before creation
   .then(createContentTypesStep)
   .then(generateSummaryStep);
 
 onboardingWorkflow.commit();
-
