@@ -7,7 +7,7 @@ import { z } from 'zod';
  * Correct format for Contentstack API:
  * headers: {
  *   authtoken: context.authtoken,  // ✅ Correct
- *   api_key: context.api_key
+ *   api_key: context.api_key //make sure u pass this properly
  * }
  * 
  * Do NOT use:
