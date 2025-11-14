@@ -682,7 +682,7 @@ export const createContentTypeTool = createTool({
 export const previewContentModelTool = createTool({
   id: 'preview-contentstack-content-model',
   description:
-    'Uses Contentstack AI to generate and preview content types and global fields based on requirements',
+    'Uses Contentstack AI to generate and preview content types and global fields based on requirements. Automatically enforces: all fields optional (mandatory: false).',
   inputSchema: z.object({
     instruction: z
       .string()
@@ -705,9 +705,19 @@ export const previewContentModelTool = createTool({
   }),
   execute: async ({ context }) => {
     try {
-      // Create form data with the instruction
+      // Append critical requirements to ensure Contentstack AI follows the rules
+      const enhancedInstruction = `${context.instruction}
+
+CRITICAL REQUIREMENTS (MUST FOLLOW):
+1. Make ALL fields optional - set "mandatory": false for every single field
+2. No field should have "mandatory": true
+3. Every field in global_fields and content_types must have "mandatory": false
+
+These requirements are non-negotiable and must be strictly followed.`;
+
+      // Create form data with the enhanced instruction
       const formData = new FormData();
-      formData.append('instruction', context.instruction);
+      formData.append('instruction', enhancedInstruction);
 
       const response = await fetch(
         'https://ai.contentstack.com/ask-ai/content-model',
@@ -1324,30 +1334,81 @@ export const previewEntryTool = createTool({
 export const createManagementTokenTool = createTool({
   id: 'create-contentstack-management-token',
   description:
-    'Creates a Management Token for API write operations (content, schema, entries).',
+    'Creates a management token for performing write operations on content types, branches, and other resources. The token is stored for future reference and can be used for programmatic access to the stack.',
   inputSchema: z.object({
-    api_key: z.string().describe('Stack API key'),
-    authtoken: z.string().describe('Auth token'),
-    name: z.string().default('Management Token').describe('Name of the token'),
-    description: z.string().default('Token for programmatic write access'),
-    scope: z.array(z.any()).default([
-      {
-        module: 'environment',
-        environments: ['development'],
-        acl: { read: true, write: true, delete: true },
-      },
-    ]),
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from the created stack)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe('Auth token (from CONTENTSTACK_AUTH_TOKEN env var)'),
+    name: z
+      .string()
+      .default('Management Token')
+      .describe('Name of the management token'),
+    description: z
+      .string()
+      .default('Token for API write operations')
+      .describe('Description of the management token'),
+    scope: z
+      .array(z.any())
+      .default([
+        {
+          module: 'content_type',
+          acl: {
+            read: true,
+            write: true,
+          },
+        },
+        {
+          module: 'branch',
+          branches: ['main'],
+          acl: {
+            read: true,
+          },
+        },
+        {
+          module: 'branch_alias',
+          branch_aliases: [],
+          acl: {
+            read: true,
+          },
+        },
+      ])
+      .describe(
+        'Scope defining permissions for different modules (content_type, branch, branch_alias, etc.)',
+      ),
+    expires_on: z
+      .string()
+      .default(
+        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
+      )
+      .describe('Expiration date in YYYY-MM-DD format (default: 1 year from now)'),
+    is_email_notification_enabled: z
+      .boolean()
+      .default(true)
+      .describe('Whether to send email notifications'),
   }),
   outputSchema: z.object({
     success: z.boolean(),
     token_uid: z.string().optional(),
-    management_token: z.string().optional(),
+    management_token: z
+      .string()
+      .optional()
+      .describe('The actual management token string to use for API calls'),
     name: z.string().optional(),
+    expires_on: z.string().optional(),
+    notice: z.string().optional(),
     error: z.string().optional(),
+    response: z.any().optional(),
   }),
   execute: async ({ context }) => {
     try {
-      const res = await fetch(
+      const response = await fetch(
         'https://api.contentstack.io/v3/stacks/management_tokens',
         {
           method: 'POST',
@@ -1361,23 +1422,465 @@ export const createManagementTokenTool = createTool({
               name: context.name,
               description: context.description,
               scope: context.scope,
+              expires_on: context.expires_on,
+              is_email_notification_enabled:
+                context.is_email_notification_enabled,
             },
           }),
         },
       );
-      const data = await res.json();
-      if (!res.ok)
-        throw new Error(
-          data.error_message || 'Failed to create management token',
-        );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error:
+            data.error_message ||
+            data.errors ||
+            'Failed to create management token',
+          response: data,
+        };
+      }
+
       return {
         success: true,
         token_uid: data.token.uid,
         management_token: data.token.token,
         name: data.token.name,
+        expires_on: data.token.expires_on,
+        notice: data.notice,
+        response: data,
       };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  },
+});
+
+// ======================
+// UPLOAD ASSET TOOL
+// ======================
+
+interface ContentstackAssetResponse {
+  asset: {
+    uid: string;
+    created_at: string;
+    updated_at: string;
+    created_by: string;
+    updated_by: string;
+    content_type: string;
+    file_size: string;
+    tags: string[];
+    filename: string;
+    url: string;
+    ACL: Record<string, unknown>;
+    is_dir: boolean;
+    parent_uid: string;
+    _version: number;
+    title: string;
+    publish_details: {
+      environment: string;
+      locale: string;
+      time: string;
+      user: string;
+    };
+  };
+}
+
+interface AssetValidationResult {
+  isValid: boolean;
+  contentType?: string;
+  contentLength?: number;
+  error?: string;
+}
+
+/**
+ * Validates that a URL points to an accessible file
+ */
+async function validateAssetUrl(url: string): Promise<AssetValidationResult> {
+  try {
+    // Perform a HEAD request to check the resource
+    const response = await fetch(url, { method: 'HEAD' });
+
+    if (!response.ok) {
+      return {
+        isValid: false,
+        error: `URL is not accessible: ${response.status} ${response.statusText}`,
+      };
+    }
+
+    const contentType = response.headers.get('content-type');
+    const contentLength = response.headers.get('content-length');
+
+    // Check file size (optional, e.g., max 50MB)
+    if (contentLength && parseInt(contentLength) > 50 * 1024 * 1024) {
+      return {
+        isValid: false,
+        error: `File is too large. Maximum size is 50MB.`,
+      };
+    }
+
+    return {
+      isValid: true,
+      contentType: contentType || undefined,
+      contentLength: contentLength ? parseInt(contentLength) : undefined,
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      error:
+        error instanceof Error
+          ? `Failed to validate URL: ${error.message}`
+          : 'Failed to validate URL',
+    };
+  }
+}
+
+/**
+ * Helper function to get file extension from content type
+ */
+function getExtensionFromContentType(contentType: string): string {
+  const typeMap: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
+    'image/tiff': 'tiff',
+    'application/pdf': 'pdf',
+    'video/mp4': 'mp4',
+    'application/zip': 'zip',
+  };
+
+  return typeMap[contentType.toLowerCase()] || 'bin';
+}
+
+export const uploadAssetTool = createTool({
+  id: 'upload-contentstack-asset',
+  description:
+    'Downloads an image/file from a URL and uploads it to Contentstack as an asset. Returns the asset UID which can be used in file/image fields in entries. Supports images, videos, PDFs, and other file types up to 50MB.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    management_token: z
+      .string()
+      .default(process.env.CONTENTSTACK_MANAGEMENT_TOKEN || '')
+      .describe('Management token for authorization (from management token creation)'),
+    asset_url: z
+      .string()
+      .url()
+      .describe('Public URL of the image/file to download and upload'),
+    title: z
+      .string()
+      .optional()
+      .describe('Title for the asset (optional, defaults to filename from URL)'),
+    description: z
+      .string()
+      .optional()
+      .describe('Description for the asset (optional)'),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    asset_uid: z
+      .string()
+      .optional()
+      .describe('The asset UID to use in entry file/image fields (e.g., "bltd5213cca438bc585")'),
+    asset_url: z.string().optional().describe('The Contentstack URL of the uploaded asset'),
+    filename: z.string().optional(),
+    content_type: z.string().optional(),
+    file_size: z.string().optional().describe('File size in bytes as string'),
+    title: z.string().optional().describe('Title of the uploaded asset'),
+    error: z.string().optional(),
+    response: z.any().optional(),
+  }),
+  execute: async ({ context }) => {
+    try {
+      const { asset_url, title, description, api_key, management_token } = context;
+
+      // Validate required credentials
+      if (!api_key || !management_token) {
+        return {
+          success: false,
+          error: 'Missing required credentials: api_key and management_token must be provided',
+        };
+      }
+
+      // Step 1: Validate the asset URL
+      const validation = await validateAssetUrl(asset_url);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.error || 'Invalid asset URL',
+        };
+      }
+
+      // Step 2: Fetch the file from URL
+      const fileResponse = await fetch(asset_url);
+      if (!fileResponse.ok) {
+        return {
+          success: false,
+          error: `Failed to fetch file: ${fileResponse.status} ${fileResponse.statusText}`,
+        };
+      }
+
+      // Get the file as a blob (native FormData works with Blob in Node.js 18+)
+      const fileBlob = await fileResponse.blob();
+
+      // Extract filename from URL or generate one
+      const urlPath = new URL(asset_url).pathname;
+      const filename =
+        urlPath.split('/').pop()?.split('?')[0] ||
+        `file-${Date.now()}.${getExtensionFromContentType(validation.contentType || fileBlob.type)}`;
+
+      // Step 3: Create FormData and upload to Contentstack
+      const formData = new FormData();
+      formData.append('asset[upload]', fileBlob, filename);
+
+      if (title) {
+        formData.append('asset[title]', title);
+      }
+
+      if (description) {
+        formData.append('asset[description]', description);
+      }
+
+      const uploadResponse = await fetch(
+        'https://api.contentstack.io/v3/assets',
+        {
+          method: 'POST',
+          headers: {
+            api_key: api_key,
+            authorization: management_token,
+            // Note: Don't set Content-Type header - FormData sets it automatically with boundary
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        return {
+          success: false,
+          error: `Contentstack upload failed: ${uploadResponse.status} ${uploadResponse.statusText}. ${errorText}`,
+        };
+      }
+
+      const responseData = await uploadResponse.json() as ContentstackAssetResponse;
+
+      return {
+        success: true,
+        asset_uid: responseData.asset.uid,
+        asset_url: responseData.asset.url,
+        filename: responseData.asset.filename,
+        content_type: responseData.asset.content_type,
+        file_size: responseData.asset.file_size,
+        title: responseData.asset.title,
+        response: responseData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+      };
+    }
+  },
+});
+
+// ======================
+// LIST CONTENT TYPES TOOL
+// ======================
+
+export const listContentTypesTool = createTool({
+  id: 'list-contentstack-content-types',
+  description:
+    'Lists all content types in a stack to verify UIDs and check what content types exist before referencing them',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe(
+        'Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)',
+      ),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    content_types: z
+      .array(
+        z.object({
+          uid: z.string(),
+          title: z.string(),
+          description: z.string().optional(),
+          created_at: z.string().optional(),
+          updated_at: z.string().optional(),
+        }),
+      )
+      .optional(),
+    total_count: z.number().optional(),
+    error: z.string().optional(),
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch(
+        'https://api.contentstack.io/v3/content_types',
+        {
+          method: 'GET',
+          headers: {
+            api_key: context.api_key,
+            authtoken: context.authtoken,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error:
+            data.error_message ||
+            data.errors ||
+            'Failed to fetch content types',
+        };
+      }
+
+      const contentTypes = data.content_types.map((ct: any) => ({
+        uid: ct.uid,
+        title: ct.title,
+        description: ct.description,
+        created_at: ct.created_at,
+        updated_at: ct.updated_at,
+      }));
+
+      return {
+        success: true,
+        content_types: contentTypes,
+        total_count: contentTypes.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  },
+});
+
+// ======================
+// VERIFY CONTENT TYPE REFERENCE TOOL
+// ======================
+
+export const verifyContentTypeReferenceTool = createTool({
+  id: 'verify-contentstack-content-type-reference',
+  description:
+    'Verifies that a content type UID exists before using it in a reference field. Use this tool BEFORE creating entries or content types that reference other content types.',
+  inputSchema: z.object({
+    api_key: z
+      .string()
+      .default(process.env.CONTENTSTACK_API_KEY || '')
+      .describe('Stack API key (from CONTENTSTACK_API_KEY env var)'),
+    authtoken: z
+      .string()
+      .default(process.env.CONTENTSTACK_AUTH_TOKEN || '')
+      .describe(
+        'Contentstack auth token (from CONTENTSTACK_AUTH_TOKEN env var)',
+      ),
+    content_type_uid: z
+      .string()
+      .describe('UID of the content type to verify exists'),
+  }),
+  outputSchema: z.object({
+    success: z.boolean(),
+    exists: z.boolean(),
+    content_type: z
+      .object({
+        uid: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+      })
+      .optional(),
+    error: z.string().optional(),
+    suggestion: z
+      .string()
+      .optional()
+      .describe('Suggestion if content type not found'),
+  }),
+  execute: async ({ context }) => {
+    try {
+      const response = await fetch(
+        `https://api.contentstack.io/v3/content_types/${context.content_type_uid}`,
+        {
+          method: 'GET',
+          headers: {
+            api_key: context.api_key,
+            authtoken: context.authtoken,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Content type doesn't exist, let's list available ones
+        const listResponse = await fetch(
+          'https://api.contentstack.io/v3/content_types',
+          {
+            method: 'GET',
+            headers: {
+              api_key: context.api_key,
+              authtoken: context.authtoken,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        const listData = await listResponse.json();
+        const availableUids = listData.content_types
+          ?.map((ct: any) => `"${ct.uid}" (${ct.title})`)
+          .join(', ');
+
+        return {
+          success: true,
+          exists: false,
+          error: `Content type "${context.content_type_uid}" does not exist`,
+          suggestion: availableUids
+            ? `Available content types: ${availableUids}`
+            : 'No content types found in this stack. Create the referenced content type first.',
+        };
+      }
+
+      return {
+        success: true,
+        exists: true,
+        content_type: {
+          uid: data.content_type.uid,
+          title: data.content_type.title,
+          description: data.content_type.description,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        exists: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+      };
     }
   },
 });
